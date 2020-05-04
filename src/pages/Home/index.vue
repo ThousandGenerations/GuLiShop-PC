@@ -1755,7 +1755,7 @@
           <img src="./images/home/floor-1-1.png" alt />
         </li>
         <li>
-          <swiper ref="mySwiper" :options="swiperOption">
+          <swiper ref="mySwiper3" :options="swiperOption3">
             <swiper-slide>
               <img src="./images/home/floor-1-b01.png" alt />
             </swiper-slide>
@@ -1859,7 +1859,7 @@
           <img src="./images/home/floor-1-1.png" alt />
         </li>
         <li>
-          <swiper ref="mySwiper" :options="swiperOption">
+          <swiper ref="mySwiper2" :options="swiperOption2">
             <swiper-slide>
               <img src="./images/home/floor-1-b01.png" alt />
             </swiper-slide>
@@ -1991,8 +1991,38 @@ export default {
           clickable: true // 允许点击小圆点跳转
         },
         autoplay: {
-          delay: 3000,
-          disableOnInteraction: false // 手动切换之后继续自动轮播
+          delay: 2000,
+          disableOnInteraction: true // 手动切换之后继续自动轮播
+        },
+        loop: true,
+        navigation: {
+          nextEl: ".swiper-button-next",
+          prevEl: ".swiper-button-prev"
+        }
+      },
+      swiperOption2: {
+        pagination: {
+          el: ".swiper-pagination",
+          clickable: true // 允许点击小圆点跳转
+        },
+        autoplay: {
+          delay: 100,
+          disableOnInteraction: true // 手动切换之后继续自动轮播
+        },
+        loop: true,
+        navigation: {
+          nextEl: ".swiper-button-next",
+          prevEl: ".swiper-button-prev"
+        }
+      },
+      swiperOption3: {
+        pagination: {
+          el: ".swiper-pagination",
+          clickable: true // 允许点击小圆点跳转
+        },
+        autoplay: {
+          delay: 500,
+          disableOnInteraction: true // 手动切换之后继续自动轮播
         },
         loop: true,
         navigation: {
