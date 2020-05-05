@@ -1,9 +1,6 @@
 <template>
-  <div>
-    <h2>params参数: keyword={{$route.params.keyword}}</h2>
-    <h2>query参数: keyword2={{$route.query.keyword2}}</h2>
-    <h2>params参数 => props: keyword3={{keyword3}}</h2>
-    <h2>query参数 => props: keyword4={{keyword4}}</h2>
+  <div class="menu">
+    <TypeNav />
   </div>
 </template>
 
@@ -15,4 +12,14 @@ export default {
 </script>
 
 <style lang="less" scoped>
+.menu {
+  box-sizing: border-box;
+  @color: #ea4a36;
+  @cBorder: #e4e4e4;
+  width: 1200px;
+  height: 100%;
+  // background: pink;
+  margin: 0 auto;
+  position: relative;
+}
 </style>

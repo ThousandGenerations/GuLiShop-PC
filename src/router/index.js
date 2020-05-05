@@ -28,7 +28,7 @@ Vue.use(VueRouter);
 //缓存原型上本来的 push 方法
 const originPush = VueRouter.prototype.push;
 const originReplace = VueRouter.prototype.replace;
-//重新指定原型上的 push 方法//三个参数,  跳转的路径 成功 promise 失败 promise
+//重新指定原型上的 push 方法//三个参数, 跳转的路径等信息 成功 promise 失败 promise
 VueRouter.prototype.push = function (location, onComplete, onAbort) {
     // console.log('push()', location, onComplete, onAbort)
     //此时 this 指向的是路由器实例对象 $router 
