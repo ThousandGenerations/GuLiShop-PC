@@ -2,16 +2,16 @@
   <div class="flag">
     <swiper ref="mySwiper" class="swiperOne" :options="swiperOption" :style="{overflow:'hidden'}">
       <swiper-slide>
-        <img src="./images/home/banner1.jpg" alt />
+        <img src="./images/banner1.jpg" alt />
       </swiper-slide>
       <swiper-slide>
-        <img src="./images/home/banner2.jpg" alt />
+        <img src="./images/banner2.jpg" alt />
       </swiper-slide>
       <swiper-slide>
-        <img src="./images/home/banner3.jpg" alt />
+        <img src="./images/banner3.jpg" alt />
       </swiper-slide>
       <swiper-slide>
-        <img src="./images/home/banner4.jpg" alt />
+        <img src="./images/banner4.jpg" alt />
       </swiper-slide>
       <div class="swiper-pagination" slot="pagination"></div>
       <div class="swiper-button-prev" slot="pagination"></div>
@@ -147,6 +147,8 @@
 </template>
 
 <script>
+//引入 mapstate
+import { mapState } from "vuex";
 export default {
   name: "ListContainer",
   data() {
@@ -198,7 +200,15 @@ export default {
         }
       }
     };
-  }
+  },
+  computed: {
+    //vue 多模块
+    ...mapState({
+      //计算属性值有内部调用回调函数(传入总的 state)
+      reqBanners: state => state.banners.reqBanners
+    })
+  },
+  methods: {}
 };
 </script>
 

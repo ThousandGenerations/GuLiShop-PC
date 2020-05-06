@@ -5,6 +5,8 @@
 */
 //1 引入我们封装好的(创建的新的 axios 实例),也就是 ajax 文件
 import ajax from './ajax';
+import mockAjax from './mockAjax'
+import mockjs from 'mockjs';
 
 //下面就是项目中用到的所有请求接口函数
 //所有接口都是以 api 开头
@@ -33,16 +35,21 @@ export const reqBaseCategoryList = () => ajax.get('/product/getBaseCategoryList'
     POST 请求
 */
 // POST 请求传参数传入形参
-// export function reqLogin(mobile, password) {
-//     //返回配置对象形式
-//     return ajax({
-//         method: 'POST', //请求方式 POST
-//         url: '/user/passport/login', // url 请求地址
-//         data: { //请求携带的参数
-//             mobile,
-//             password,
-//         }
-//     })
-//     // 函数形式               //url                //参数(对象简写)
-//     // return ajax.post('/user/passport/login'.{mobile,password})
-// }
+export function reqLogin(mobile, password) {
+    //返回配置对象形式
+    return ajax({
+        method: 'POST', //请求方式 POST
+        url: '/user/passport/login', // url 请求地址
+        data: { //请求携带的参数
+            mobile,
+            password,
+        }
+    })
+    // 函数形式               //url                //参数(对象简写)
+    // return ajax.post('/user/passport/login'.{mobile,password})
+}
+
+//轮播和楼层的请求
+
+export const reqBanners = () => mockAjax('/banners')
+export const reqFloors = () => mockAjax('/floors')

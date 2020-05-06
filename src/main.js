@@ -10,6 +10,8 @@ import 'swiper/css/swiper.css'
 import store from './store'
 //引入TypeNav组件
 import TypeNav from '@/components/TypeNav'
+//引入 mock 模块 加载一次就能使用接口
+import './mock/mockSever'
 
 Vue.config.productionTip = false //去掉不是生产环境的提示
 // 注册 swiper 插件

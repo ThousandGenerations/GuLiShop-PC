@@ -75,7 +75,7 @@ export default {
     search() {
       //编程式路由导航
       //字符串传递参数的形式
-      const keyword = this.keyword;
+      // const keyword = this.keyword;
       // this.$router.push(`/search/${keyword}?keyword2=${keyword.toUpperCase()}`);
       //传递参数为''(空串)的时候,地址栏params的跳转地址会出现错误,判断解决,如果参数为空,就跳转到 search 页面,如果有参数,正常跳转
       // if (keyword === "") {
@@ -103,11 +103,26 @@ export default {
       // }
 
       //对象形式的第二种方式
-      this.$router.push({
-        name: "search",
-        params: { keyword: keyword === "" ? undefined : keyword },
-        query: { keyword2: keyword.toUpperCase() }
-      });
+      // this.$router.push({
+      //   name: "search",
+      //   params: { keyword: keyword === "" ? undefined : keyword },
+      //   query: { keyword2: keyword.toUpperCase() }
+      // });
+
+      const keyword = this.keyword;
+      const location = {
+        name: "search"
+      };
+      //如果 keyword 有值,指定 params
+      if (keyword) {
+        location.params = { keyword };
+      }
+      //携带 query 参数
+      const { query } = this.$route;
+      location.query = query;
+
+      //跳转到 search
+      this.$router.push(location);
     }
   }
 };
