@@ -1,5 +1,616 @@
+# 谷粒商城PC项目笔记
 
 ## [20200509-更新笔记](http://note.youdao.com/noteshare?id=dda518f74ef97af98494e2e9e3c8ec7a)
+
+## 路由跳转以及传参的几个问题汇总
+* 路由组件
+    * 下载vue-router包（注册使用）
+    * 确定整体结构
+    * 创建路由器, 配置路由, 配置路由器
+* 组件中路由相关的两个对象
+    * $router:路由器对象，包含一些路由跳转的方法，如 push()/replace()/back()
+    * $route:当前路由信息对象，包含当前路由相关数据的对象：path/name/query/params/meta
+* 路由跳转的方式
+    * 声明式路由跳转
+    ```html
+        <!--通过内置标签 router-link 的方式进行声明式跳转-->
+        <!--to 属性可以指定要跳转到的路由地址-->
+        <router-link to="/xxx"></router-link>
+    ```
+    * 编程式路由跳转
+    ```js
+        //通过 vueRouter 的实例对象$router中的 push 或者 replace 的方式编写要跳转的路由地址
+        this.$router.push/replace('/xxx')
+        //push 和 replace 的区别？
+        //push:跳转到指定的路由地址，但这个方法会向history栈添加一个记录，点击后退会返回到上一个页面。
+        //replace:同样是跳转到指定的url，但是这个方法不会向history里面添加新的记录，点击返回，会跳转到上上一个页面。上一个记录是不存在的。
+    ```
+* 路由跳转携带参数的两种类型
+    * params 参数
+    * query 参数
+* 携带参数的两种方式
+    * 字符串方式：将参数手动通过拼接字符串的方式添加到地址中传递参数
+    ```js
+    this.$router.push(`/search/${keyword}?keyword2=${keyword.toUpperCase()}`);
+    ```
+    * 对象形式(开发中常用方式)：
+    ```js
+    //第一种对象形式
+    
+    if (keyword === "") {
+         this.$router.push({
+           name: "search"
+         });
+       } else {
+         this.$router.push({
+           name: "search",
+           params: { keyword },
+           query: { keyword2: keyword.toUpperCase() }
+         });
+       }
+       
+       
+    //第二种对象形式
+    this.$router.push({
+        name: "search",
+        params: { keyword: keyword === "" ? undefined : keyword },
+        query: { keyword2: keyword.toUpperCase() }
+      });
+      
+    //说白了就是判断 params 形式的传参方式，为空串的话就只返回路由路径，或者是 undefined
+    //这样地址栏路径才不会出现问题
+    ```
+    * 需要注意点：
+        * 一旦有带有：的路径配置，就必须指定一个 name
+        属性来标识当前路由（给路由起个名字）
+        ```js
+        {
+            name: 'search',  // 是当前路由的标识名称
+            path: '/search/:keyword?', //:keyword？相当于占位符
+            component: Search,
+        }
+        
+        ```
+        * params 只能和 name 组合使用
+        * query 可以与 name 或者 path 组合使用
+        * 使用 params 方式传递字符串如果是空串的形式在跳转的时候地址栏路径会出现问题
+        ```js
+            if (keyword === "") { //判断 如果传递字符串是空串
+                this.$router.push("/search"); //就不加参数跳转到要跳转的路由地址
+            } else {    //否则正常跳转
+                this.$router.push(`/search/${keyword}?keyword2=${keyword.toUpperCase()}`
+            );
+            }
+        ```
+## 关于vue路由的面试问题汇总
+* 面试问题1: 指定params参数时可不可以用path和params配置的组合?
+    * 不可以。指定 params 参数必须使用 name 和 params组合，因为不指定 name使用 path 的话地址栏会出现问题
+* 面试问题2: 如何指定params参数可传可不传? 
+    * path:'/xxx/:keyword?'
+* 面试问题3: 如果指定name与params配置, 但params中数据是一个"", 无法跳转
+    * 解决方式 1：不指定 params （判断：如果是空串就不指定 params 直接返回路由的路径地址）
+    * 解决方式 2：指定params参数值为undefined
+* 面试问题4: 路由组件能不能传递props数据?
+    * 可以，可以将query参数或者 params 映射成 props传递给路由组件对象，路由组件对象可以通过 props 声明接收参数
+    ```js
+    	//实现:
+    	props: route=>({
+    	    keyword1: route.params.keyword, 
+    	    keyword2: route.query.keyword 
+    	})
+    ```
+* 面试问题 6: 编程式路由跳转到当前路由(参数不变，重复跳转), 会抛出NavigationDuplicated的警告错误
+    * 原因分析：
+        * 在 vue旧版本3.1.0 之前的时候，使用$router.push/replace 方法的时候，是没有返回值的，但是在 vue 更新到 3.1.0之后的版本的时候，他增加了 push/replace 方法的返回值是一个 promise 对象，他可以通过参数指定回调函数返回一个成功或者失败的 promise，但是，如果没有指定回调函数返回成功或者失败的 promise 并且内部判断要跳转的路径参数没有变化的的话，就会抛出一个失败的promise，就会导致报错
+    * 解决办法
+        * 1.在跳转的时候，指定一个成功或者失败的回调函数，通过 catch 来处理错误，就不会报错了
+        * 2.修正 Vue原型上的push 和 replace方法
+```js
+//缓存原型上本来的 push 方法
+const originPush = VueRouter.prototype.push;
+const originReplace = VueRouter.prototype.replace;
+//重新指定原型上的 push 方法//三个参数,跳转的路径等信息 成功 promise 失败 promise
+VueRouter.prototype.push = function (location, onComplete, onAbort) {
+    // console.log('push()', location, onComplete, onAbort)
+    //此时 this 指向的是路由器实例对象 $router 
+    //如果调用 push的时候,传递了成功或者失败的回调函数
+    if (onComplete || onAbort) { //如果已经指定了成功或者失败的 promise 那么就不需要做处理
+        //让刚才保存的(原来 vue的) push 方法来处理就行了
+        originPush.call(this, location, onComplete, onAbort) //不需要返回,因为执行的结果返回值是 undefined 有没有返回值都一样
+    } else {
+        //如果调用了 push 但是没有传递成功或者失败的 promise,需要 catch 处理
+        //使用 call 方法指定 $router这个实例对象的this来调用函数
+        return originPush.call(this, location).catch(e => {
+            console.log('catch error') //上面不需要传递另外两个参数,因为本来就是没有指定参数才进到 else 里面
+            //这个时候需要返回一个新的状态为 pending 的 promise 对象,这样做是没了中断 promise 链条,后面成功的回调函数就不会被调用
+            return new Promise(() => {
+
+            })
+        })
+    }
+}
+// replace同理   
+ ```
+    * 扩展：声明式路由之所以没有这样的问题，是因为默认传入了成功的回调函数
+    
+## 二层路由及以上刷新丢失reset样式
+* 原因分析：
+    * 因为我们用的路由模式是history，第一次跳转时没有问题，再刷新时此时加载 css 样式的路径为`http://localhost:8080/search/css/reset.css`，因为我们再根 index 引入的 css 路径为相对路径，但是在刷新之后路径上加了 search,css 文件找的就是 search下的 css,所以找不到，
+* 解决：
+    * 将 css路径指定为根路径`http://localhost:8081/css/reset.css`，不再是相对路径
+
+## postman测试接口
+* 注意的是 POST 请求指定请求参数时候的格式为 json
+
+## axios二次封装
+1. 为什么要对 axios 进行二次封装？
+    * axios 本身是对原生 ajax（XHR） 的封装,在完成项目的过程中，我们要多次与后台进行交互，为了简化操作，以及在原有基础上添加功能，所以我们要对 axios 进行二次封装
+    * 1.配置通用的路径和超时提醒
+        * 首先要做的是引入 axios 这个包，其次我们还要做进度条的效果
+            ```js
+            //下载 axios 依赖包,并引入
+            import axios from 'axios'
+            //下载进度条的包并引入
+            import NProgress from 'nprogress'
+            //引入 nprogress的 css
+            import 'nprogress/nprogress.css'
+            //配置不显示右上角小圆圈,只显示进度条
+            NProgress.configure({
+                showSpinner: false,
+            });
+            ```
+        * 创建一个新的 axios 实例，使用 create 方法，并创建通用路径,以及超时时间
+        ```js
+        // 1. 配置通用的基础路径和超时
+        //创建一个新的 axios实例,功能和 axios 类似(可以作为函数或者对象发送请求)
+        const instance = axios.create({
+            //指定一个通用的 url /api
+            //如果后台服务器允许跨域可以直接写后台服务器域名端口号
+            baseURL: '/api', //由代理服务器转发到http://182.92.128.115/api
+            timeout: 15000, //指定处理请求的超时时间
+        })
+        ```
+        * 配置 axios 的请求拦截器以及响应拦截器，将发送的请求进行拦截并处理（响应式添加进度条），再发送给服务器（return config）,等服务器返回相应数据时，再进行拦截，不论成功或者失败，都要关闭进度条，之后再将拦截的数据返回给客户端
+        ```js
+        //配置 axios 请求拦截器,在发送请求的时候显示进度条
+        instance.interceptors.request.use(config => {
+            console.log('请求拦截器执行了')
+            // 2. 显示进度条
+            NProgress.start();
+            return config //拦截之后再将数据发送给服务器
+        })
+
+        //配置 axios 响应拦截器,在响应成功或者失败的时候先拦截到,然后隐藏掉进度条,再返回数据
+        instance.interceptors.response.use(
+            response => {
+                //拿到响应体数据的时候
+                console.log('响应拦截器执行了');
+                //不论成功还是失败都要隐藏掉进度条
+                NProgress.done(); //隐藏
+                // 3 如果成功返回响应体的话,将响应体交给客户端,在这里要做特殊操作,就是本来的 axios 返回的响应体(response)是一整个完成的数据,我们这个时候必须.data 才能获取到真正的响应体数据
+                // 所以这个时候我们可以直接拦截到数据返回 response.data 可以简化接下来的操作,很方便
+                return response.data; //返回response.data里面的真正数据
+            },
+            error => {
+                //请求体函数的第二个参数(错误)
+                //也就是说请求失败的时候返回的错误信息
+                console.log('响应体拦截器失败回调执行了') //打印一下
+        
+                //注意一点就是就算响应失败了,我们这个时候也要将进度条隐藏掉
+                NProgress.done();
+        
+                //可以处理错误,也可以不处理,在这里就简单的 alert 提示一下
+                alert(`请求失败:${error.message || '未知错误'}`);
+        
+                //返回一个失败的 promise 防止下次执行变成成功的 promise
+                return Promise.reject(error)
+            })
+
+        ```
+        * 需要注意的点就是，我们封装好的 axios （假如成功）会直接返回response.data 里面的数据，而不再是 response 里面的数据了，其次就是在响应失败的时候，我们要返回一个失败的 promise 传入错误信息，防止再进行请求的时候，变为成功的promise（因为除了返回失败的 promise，其他类型的值都被看做是一个成功的 promise）
+        * 接下来就是要将新创建的 axios 暴露出去
+        ```js
+        //向外暴露封装好的instance
+        export default instance
+        ```
+
+
+2. 请求接口时可能会出现的问题
+* 404 错误
+    * 没有后台服务器处理（找不到服务器）
+        * 当前的axios 请求配置的地址为/api/product/getBaseCategoryList'，
+        * 当前发送请求所在的地址为http://localhost:8080/，
+        * 最终ajax 请求的地址就是http://localhost:8080/api/product/getBaseCategoryList
+    * 解决办法
+        * 1.手动将baseURL 配置为后台服务器的地址http://182.92.128.115/api
+        但这样做的前提是服务器允许跨域
+        * 2. 使用代理服务器间接发送到目标服务器，再有代理服务器返回数据
+        ```js
+        //配置baseURL: /api
+            //配置代理: vue.config.js中
+                devServer: {
+                    proxy: { // 配置代理
+                    '/api': { // 只处理以/api开头的请求
+                        target: 'http://182.92.128.115', // 转发的目标地址
+                        changeOrigin: true // 支持跨域
+                    }
+                }
+        ```
+## vuex 的多模块编程
+* vuex 的基本使用：
+    * 成员列表
+        * state 存放状态
+        * mutations state成员操作
+        * getters 加工state成员给外界
+        * actions 异步操作
+        * modules 模块化状态管理
+* 多模块编程
+    * 每个模块进行拆分，数据单独管理，更加方便
+    * vuex多模块 state 数据结构
+    ```js
+    {
+            user: {
+                userInfo: {}
+            },
+            home: {
+                baseCategoryList: []
+            }
+        }
+    ```
+    * vuex 与 API 进行交互的流程
+        * 异步action: 调用api接口请求函数  ==> 成功之后commit  ===> 调用mutation  ==> 更新状态数据
+## TypeNav动态显示分类列表
+1. 在mounted()中分发请求数据的异步action
+        `this.$store.dispatch('getBaseCategoryList')`
+2. 利用mapState()将state中的分类列表映射成计算属性
+* `mapState(['xxx'])`: 映射总state的直接属性xxx成为xxx计算属性
+* `mapState({xxx2: 'xxx'})`: 映射总state的直接属性xxx成为xxx2计算属性
+* `mapState({categoryList: state => state.home.baseCategoryList})`:  映射home子模块的baseCategoryList属性成为categoryList计算属性
+3. 模板中显示数据
+* 利用 v-for和{{ }} 显示数据
+
+## TypeNav交互功能
+* 使用事件操作二级、三级菜单的显示隐藏
+    * 绑定事件
+        * 使用 mouseenter 和 mouseleave
+    * 思路:
+     1. 改变下结构,使商品列表的 div 和菜单 div 被同一个 div 包括
+     2. 鼠标移入(包括移入商品列表)之后显示,鼠标离开大的 div(包括商品列表)之后隐藏,切换类名的方式显示隐藏三级菜单设置初始值(没有移入的时候),设置为-1,移入之后currentIndex变成对应的 div 的下标
+     3. 这样做固然可以,但带来的问题就是快速移动造成的卡顿现象
+     4. 利用 lodash的throttle函数进行节流处理延迟时间再进行切换类名
+     5. 带来的问题就是鼠标已经离开大的 div 但是这个时候,延迟时间还没到,就还是会执行之前节流要生效的函数(也就是移入时件)
+     6. 所以我们现在的思路是初始值currentIndex设置为-2(代表完全没移入的时候),当移入包含商品列表和菜单的 div 时,值变成-1,离开变成 -2
+     7. 当currentIndex这个值为-2 的时候 return不去执行下面的更新下标操作,就可以解决变成-1 才能改变菜单下标index的值,-2之后不能改变
+     ```html
+     <!--外层最大 div 嵌套上边<p>全部商品分类</p> 以及菜单-->
+     <div @mouseleave="hideCategorys" @mouseenter="showCategorys">
+     <!--为真时显示，假时隐藏-->
+     <div class="sort" v-show="isShowFirst">
+     ```
+     ```js
+      data() {
+        return {
+          currentIndex: -2,   //初始数据
+          isShowFirst: false  //初始状态
+        };
+      },
+     
+     //隐藏分类列表函数
+    hideCategorys() {
+      //和之前的逻辑一样 当完全移出(也就是 currentIndex === -2)的时候 就是隐藏
+      this.currentIndex = -2; //给data 里 currentIndex数据赋值-2代表隐藏
+      if (this.$route.path !== "/") { //判断路由路径 !== '/'
+        this.isShowFirst = false; //就隐藏
+      }
+    },
+
+    //显示分类列表函数
+    showCategorys() {
+      //移入显示就是之前逻辑
+      this.currentIndex = -1;
+      this.isShowFirst = true;
+    },
+     ```
+## lodash库按需引入
+* `import throttle from 'lodash/throttle'  // 只引入我需要的工具函数`
+
+## 使用编程式导航代替声明式减少组件对象的数量
+* 使用声明式导航跳转到 search 组件的话，分类列表中的每一个列表都要生成一个 router-link组件对象，造成显示缓慢，卡顿的现象
+* 使用编程式导航，不用创建多个路由组件对象
+
+## 使用事件委派进一步优化
+* 上面提到编程式导航，首先想到的是给 a 标签绑定事件，也是会绑定多个事件，性能上也不是很好，这个时候就要想到事件委派
+* 说到事件委派，这个时候有一个问题就是传递参数，我们需要在用户点击之后跳转到指定 search 页面，同时传递用户点击时对应的参数，每一个按钮参数都是不一样的
+* 标签属性传递参数：
+    * 指定标签属性：固定格式`data-xxx`
+    * 给对应的 a 标签添加自定义属性
+    * 使用 event 事件对象的 target.dataset方法获取标签对应的自定义属性
+    ```html
+    <a href="javascript:;"
+       :data-categoryName="c1.categoryName" 传入当前菜单名字
+       :data-category1Id="c1.categoryId"   传入当前菜单 id
+      >{{c1.categoryName}}</a>
+    ```
+    ```js
+    const {  //利用解构赋值拿到event.target.dataset中对应的属性
+        categoryname,
+        category1id,
+        category2id,
+        category3id
+      } = event.target.dataset;
+    ```
+    * 1. 判断categoryname是不是有值，因为通过事件委派的方式，必须判断用户是不是点击的菜单，可能用户点击的是其他位置，这个时候categoryname是没有值的
+    * 2. 注意一点就是属性名在event.target.dataset中，不管之前是大写还是小写，都会转换成小写
+    * 3. 准备 query 参数`const query = { categoryName: categoryname };`
+    * 4. 判断用户的点击有没有对应的 id值，如果1id 为真就说明用户点击了一级菜单，以此类推
+    * 5. 将结果为真（也就是用户当前点击的 a 标签的自定义属性值）添加到之前准备好的 query 参数对象中
+    ```js
+    //判断应该存在的分类项 存在是有值的 不存在是 undefined 为假
+      if (categoryname) {
+        //指定 categoryname 的 a 属性才进入判断
+        //准备 query 参数对象
+        const query = { categoryName: categoryname };
+        //判断点击的a 标签 id 是1 || 2 || 3 为真说明就是点击 id
+        if (category1id) {
+          query.category1Id = category1id;
+        } else if (category2id) {
+          query.category2Id = category2id;
+        } else if (category3id) {
+          query.category3Id = category3id;
+        }
+    ```
+    * 1. 定义路由跳转的 location 对象，将之前获取到的 query 参数添加到 location 对象中
+    * 2. 获取 params 参数，根据分类菜单搜索时也要携带输入框中的 params 参数，前提是有params 参数
+    * 3. 判断有没有 params 参数，如果有，直接添加到 location 对象中
+    * 4. 跳转到 search 页面
+    * 5. 跳转之后隐藏掉菜单列表（之前定义好的方法）
+    ```js
+    //定义路由跳转的 location 对象
+        const location = {
+          name: "search",   //使用 name 配合 params 参数传递
+          query //将之前获取到的 query 参数添加
+        };
+
+        //获取 params 参数对象
+        const { keyword } = this.$route.params;
+        //根据分类搜索时,也要携带关键字搜索 params 参数,当然,前提是 keyword 有值
+        if (keyword) {
+          //判断是否有值,如果有值,将值添加到 location 对象中
+          location.params = { keyword }; //解构赋值写法 相当于 keyword:keyword
+        }
+
+        //跳转到 search
+        this.$router.push(location); //传入之前定义的 location 对象就可以(包含地址和参数)
+
+        //跳转之后隐藏以及列表 正好调用之前定义的方法 hideCategorys
+        this.hideCategorys();
+    ```
+## 一级列表显示隐藏的过渡效果
+* 用<trasition name="xxx">包含显示隐藏的标签
+* 在特定类名下指定过渡样式
+* 在特定类名下指定隐藏时样式
+
+
+## 优化请求执行的位置, 减少请求次数
+* 问题：在 App 组件中定义请求执行,因为如果在 TypeNav中请求的话三级列表,跳转到 serach 页面就又会请求再一次加载请求列表
+* 原因: 因为在 TypeNav 中定义了Ajax请求,然后我们在 home 组件进行引入,又在 search 中引入,相当于是调用了两次 
+            当点击跳转的时候,首先 home 中的子组件 TypeNav 会死亡,之后加载 search 中的 TypeNav 组件,就又一次发送了请求
+* 解决:所以我们现在找一个公共组件 App.vue 当页面加载的时候到页面关闭或者刷新都是活着的 在这里面发送请求会减少向服务器发送请求的次数,增加用户体验的同时,降低了服务器压力
+```js
+//通过 vuex 异步 action 获取数据到 vuex 的 state 中进行管理
+this.$store.dispatch("getBaseCategoryList");
+```
+## Moke模拟请求数据接口
+* 问题: 首页只有分类的接口, 其它数据接口还没有写好
+* 解决: 需要我们前台工程自己在前台mock数据
+    * 下载mockjs
+    * 引入mockjs得到Mock
+    * mock接口: Mock.mock('/mock/xxx', {code: 200, data: banners/floors})
+    * mockAjax: 指定baseURL为/mock
+    * api/index.js: reqBanners = () => mockAjax('/banners')
+    * 在组件中调用测试: reqBanners()
+
+## Mock 接口的 vuex
+* home.js管理状态
+    * mutation 添加规则
+    ```js
+    mutations:{
+        /* 
+    接收保存新的轮播数组
+    */
+    RECEIVE_BANNERS (state, banners) {
+      state.banners = banners
+    },
+    /* 
+    接收保存新的楼层数组
+    */
+    RECEIVE_FLOORS (state, floors) {
+      state.floors = floors
+    },
+    }
+    ```
+    * actions发送异步请求获取数据
+    ```js
+    /* 
+    获取分类列表的异步action
+    */
+    async getBaseCategoryList ({commit}) {
+      // 1. 发异步ajax请求
+      const result = await reqBaseCategoryList()
+      // 2. 成功后, 提交mutation保存数据
+      if (result.code===200) {
+        const baseCategoryList = result.data
+        commit('RECEIVE_BASE_CATEGORY_LIST', baseCategoryList)
+      }
+    },
+    ```
+## 先实现轮播的静态页面
+* 下载swiper: npm install -S swiper
+* 引入swiper: js/css
+
+## 解决多个swiper效果冲突的问题
+* 问题: 针对某个swiper界面创建一个swiper对象, 它会影响了其它界面的swiper界面
+* 原因：因为实现轮播效果的实例对象 Swiper ,在声明选择器的时候使用的是`new Swiper ('.swiper-container')` 我们三个轮播组件都是用这个类名，所以就会出现冲突
+* 解决：使用 vue 提供的 ref 属性，给标签定义一个唯一标识，然后使用 `this.$refs.swiper`来声明选择器，这样就不会出现多个轮播效果冲突
+
+## 解决swiper动态页面轮播的bug
+* 问题：轮播图正常引入，数据正常获取，但是没有效果
+* 原因：因为 Swiper 组件对象创建规定必须是在页面创建之后，但是我们数据是异步获取，再加上是在 mounted 中使用 new Swiper，也就是说页面还没有加载完成，就已经创建了 Swiper 实例对象
+* 解决：
+    * 方法 1：给创建Swiper实例对象的 new Swiper 添加定时器
+        * 但是这种方法明显不可取，定时器定多长时间？都是未知数，你也不知道用户这个加载页面请求要多久才能响应，时间长了有问题，时间短了更有问题
+    * 方法 2：watch(监视属性) + $nextTick() 方法
+        * 通过 watch 能知道轮播数据发生变化了（数据已经加载完成）
+        * 通过 $nextTick(callback)知道界面也更新了（页面更新之后的延迟回调）
+        * 在 $nextTick 里创建实例
+        ```js
+        
+         /* 
+          监视属性,监视 carouselList 这个数组的变化,当 carouselList 从[]变成[...]的时候触发函数
+          注意:
+        1. 默认初始时这个监视属性不调用,当监视属性监视到 carouselList 改变时才会调用
+        2. 只要更新了数据, 界面就会自动更新(我们称为数据绑定),但是<vue更新界面是异步的>
+            我们更新了数据==>立即同步调用监视属性的回调函数(此时界面还没有更新,列表数据还没有显示)==>异步更新页面
+            所以我们就需要在 carouselList 这个监视函数中 增加一个新东西 nextTick()
+            nextTick(()=>{}) ==>  他指定的回调函数是在数据更新导致页面更新完成后自动进行调用执行的
+        */
+        watch:{
+            this.$nextTick(() => {
+                //this.$nextTick   在下次 DOM 更新循环结束之后执行延迟回调。在修改数据之后立即使用这个方法，获取更新后的 DOM。
+                this.initSwiper(); // 延迟回调之后加载,用 this.$next 包裹创建 Swiper 对象可以使 Dom 加载完成之后调用创建对象(延迟加载),获取更新后的 DOM
+            });
+        }
+        ```
+        * 理解更新数据/调用监听回调/更新界面的流程
+        我们更新了数据 ==> 立即同步调用监视的回调函数(界面还没有更新, 列表数据还没有显示)  ==> 异步更新界面
+    理解nextTick()
+        // nextTick()需要在数据更新之后界面更新前调用
+        // 指定的回调函数什么时候执行: 这次数据更新导致的界面更新完成后立即执行
+        Vue.nextTick(callback)
+        vm.$nextTick(callback)
+
+## 封装轮播组件，便于复用(因为代码几乎一致，就是数据不一样)
+* 抽取轮播的模板部分
+    ```html
+    <template>
+      <!-- <div class="swiper-container" id="swiper"> -->
+      <div class="swiper-container" ref="swiper">
+        <div class="swiper-wrapper">
+          <div class="swiper-slide" v-for="item in carouselList" :key="item.id">
+            <img :src="item.imgUrl" />
+          </div>
+        </div>
+        <!-- 如果需要分页器 -->
+        <div class="swiper-pagination"></div>
+    
+        <!-- 如果需要导航按钮 -->
+        <div class="swiper-button-prev"></div>
+        <div class="swiper-button-next"></div>
+      </div>
+    </template>
+    ```
+* 抽取轮播的JS部分
+ ```js
+  methods: {
+    // 创建 swiper 实例对象:必须在列表时局显示之后创建才有正常的轮播效果
+    //swiper 实例必须在页面加载成功之后再去实例化才能使用,如果页面还没有加载出来,就已经生成了 swiper 的实例,那么这个时候就没有轮播图
+    initSwiper() {
+      new Swiper(this.$refs.swiper, {
+        //使用 this.$refs 唯一标识符标识这个轮播图的区域
+        // direction: 'horizontal', // 水平切换, 默认就是这个值
+
+        loop: true, // 循环模式选项
+
+        // 如果需要分页器
+        pagination: {
+          el: ".swiper-pagination"
+        },
+        autoplay: {
+          delay: 2000,
+          stopOnLastSlide: false,
+          disableOnInteraction: false
+        },
+        // 如果需要前进后退按钮
+        navigation: {
+          nextEl: ".swiper-button-next",
+          prevEl: ".swiper-button-prev"
+        }
+      });
+    }
+  }
+ ```
+* 声明接收轮播的数组数据属性: carouselList,组件进行实例化的时候可以通过标签属性的方式传递数据
+ ```js
+ props: {
+    carouselList: Array
+  },
+ ```
+## 解决Floor组件中轮播有问题的bug
+* 问题: banners的轮播可以, 但2个Floor的轮播都没有效果
+* 原因
+```js
+/* 
+原因:
+  1. 给标签传入的'属性'是空数组/undefined的时候,组件对象还是会创建,但是如果是用过 v-for遍历一个空数组或者 undefined 来产生多个标签的时候,组件对象是不会创建的
+  2. watch 默认的规则是:初始创建显示的时候不会执行,只有在数据改变的时候才会执行
+      先说 banners 为什么可以有轮播效果?
+        1). 首先 banners 一开始是个空数组,上面说过了,给组件对象传递一个属性的时候,就算是个空数组/undefined,它组件对象该创建还是会创建,并不会影响什么
+            接下来,上面也说过了,初始创建显示的时候,默认情况下并不会去执行watch监视属性(里面的回调函数),当 banners 请求返回结果变成了一个有值得数组的时候
+            这个时候代表的是数据改变了,监视属性就会监视到,进而就回去执行里面的回调函数,从而去创建 Swiper 的实例对象,这也就说明了问什么 banners 的轮播有效果
+
+        2). 其次说的是 floors ,这个数组一开始也是一个空的数组,并且,他是通过v-for遍历 floors数组 去创建floor 这个组件对象的
+            []==>[{floors1},{2}],这个时候上面说过了,在创建组件对象的时候,他还是一个空数组,自然是遍历不到数据的,当然,也就不会产生组件实例对象,所以这个时候 <Floor/>
+            组件还没有产生
+            当请求返回数据的时候,本来是空的数组,有了两个对象,'楼层 1' 和'楼层 2',这个时候已经创建了 Floor 的组件对象,Floor 的组件对象中又有轮播的组件 Carousel,自然也会同时创建,想当于只要创建了楼层组件对象,就会创建轮播组件对象
+            但是!!!!注意,之前说了,初始化创建的时候,并不会执行监视属性,更不会去创建 Swiper 的组件对象,但是很遗憾,已经错过了,数据已经存在了,不会再改变了,所以就不会再触发监视属性了,自然轮播图效果也不会有
+
+        3). 解决方法:
+            1. 解决方法很简单,只要是 floor 组件对象创建完成之后,也就是页面更新之后,手动调用一次创建 Swiper 对象
+            2. 初始化 watch 监视属性的时候,就让他先执行一次,这样也可以
+
+            1==> 在 mounted 生命周期函数中,判断 floors 数组(有数据的时候,就去创建 Swiper 实例对象)
+            2==> 在 给 watch 制定两个配置
+                  1. handler:判断如果有数据,延迟创建 Swiper 对象
+                  2. inmediate:指定为 true,表示在初始显示之前就会调用一次
+                
+解决:
+    办法 1: mounted() + watch 回调
+        判断floors 是否已经有数据,有的话就立即创建 swiper 对象
+        watch 回调:判断如果有数据,演示创建 swiper 对象
+    办法 2:watch
+        给 watch 制定两个配置
+        handler:判断如果有数据,延迟创建 swiper 对象
+        immediate:指定为 true,久是在初始显示之前就会调用一次监视属性
+    */
+    // 方法二
+
+    carouselList: {
+      /* 
+        使用 watch监视属性handler方法创建 Swiper
+        之后有一个immediate属性,为 true 会在初始化显示的时候立即调用回调函数一次
+      */
+      handler(value) {
+        if (value.length > 0) {
+          this.$nextTick(() => {
+            //this.$nextTick   在下次 DOM 更新循环结束之后执行延迟回调。在修改数据之后立即使用这个方法，获取更新后的 DOM。
+            this.initSwiper(); // 延迟回调之后加载,用 this.$next 包裹创建 Swiper 对象可以使 Dom 加载完成之后调用创建对象(延迟加载),获取更新后的 DOM
+          });
+        }
+      },
+      immediate: true
+    }
+    //方法一:
+
+   mounted() {  //floos 通过mounted生命周期创建的 Swiper
+     if(this.carouselList.length>0){  //必须判断 数据列表长度>0 说明已经有数据了
+       this.initSwiper() //这个时候就应该直接创建 Swiper 对象
+     }
+   },
+    ```
+
+### [axios 详解 --> 好文章](https://juejin.im/entry/58b2532f2f301e006c0a2d80)
+### [vuex 文章](https://juejin.im/entry/58cb4c36b123db00532076a2)
+
 
 
 
