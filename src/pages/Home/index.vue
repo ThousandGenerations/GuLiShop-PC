@@ -21,10 +21,12 @@
       <Like />
       <!-- 猜你喜欢部分结束 -->
       <!-- 家用电器 -->
-      <Floor />
+
+      <!-- 遍历 floors 的数据并通过标签属性传递给组件内部(组件内部通过 props 接受) -->
+      <Floor v-for="floor in floors" :key="floor.id" :floor="floor" />
       <!-- 家用电器结束 -->
       <!-- 家用电器2 -->
-      <Floor />
+      <!-- <Floor /> -->
       <!-- 家用电器2结束 -->
       <!-- 手机品牌 logo -->
       <Brand />
@@ -39,6 +41,7 @@ import Rank from "./Rank/Rank";
 import Like from "./Like/Like";
 import Floor from "./Floor/Floor";
 import Brand from "./Brand/Brand";
+import { mapState } from "vuex";
 export default {
   components: {
     ListContainer,
@@ -48,7 +51,19 @@ export default {
     Floor,
     Brand
   },
-  name: "Home"
+  name: "Home",
+  mounted() {
+    //在 home 组件获取 state 管理数据
+    //分发 action 请求获取 banners 和 floors 的数据到 state 中
+    this.$store.dispatch("getBanners");
+    this.$store.dispatch("getFloors");
+  },
+  computed: {
+    //计算属性获取 floors 数据
+    ...mapState({
+      floors: state => state.home.floors
+    })
+  }
 };
 </script>
 

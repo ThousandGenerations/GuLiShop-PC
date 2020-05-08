@@ -49,7 +49,7 @@ export function reqLogin(mobile, password) {
     // return ajax.post('/user/passport/login'.{mobile,password})
 }
 
-//轮播和楼层的请求
+//轮播和楼层的请求函数
 
 export const reqBanners = () => mockAjax('/banners')
 export const reqFloors = () => mockAjax('/floors')

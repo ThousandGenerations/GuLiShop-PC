@@ -25,7 +25,7 @@ const instance = axios.create({
 })
 //配置 axios 请求拦截器,在发送请求的时候显示进度条
 instance.interceptors.request.use(config => {
-    console.log('请求拦截器执行了')
+    // console.log('请求拦截器执行了')
     // 2. 显示进度条
     NProgress.start();
     return config //拦截之后再将数据发送给服务器
@@ -35,7 +35,7 @@ instance.interceptors.request.use(config => {
 instance.interceptors.response.use(
     response => {
         //拿到响应体数据的时候
-        console.log('响应拦截器执行了');
+        // console.log('响应拦截器执行了');
         //不论成功还是失败都要隐藏掉进度条
         NProgress.done(); //隐藏
         // 3 如果成功返回响应体的话,将响应体交给客户端,在这里要做特殊操作,就是本来的 axios 返回的响应体(response)是一整个完成的数据,我们这个时候必须.data 才能获取到真正的响应体数据
@@ -45,7 +45,7 @@ instance.interceptors.response.use(
     error => {
         //请求体函数的第二个参数(错误)
         //也就是说请求失败的时候返回的错误信息
-        console.log('响应体拦截器失败回调执行了') //打印一下
+        // console.log('响应体拦截器失败回调执行了') //打印一下
 
         //注意一点就是就算响应失败了,我们这个时候也要将进度条隐藏掉
         NProgress.done();

@@ -10,7 +10,7 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 // import { reqBaseCategoryList } from "@/api";
-import { reqBanners } from "@/api";
+// import { reqBanners, reqFloors } from "@/api";
 export default {
   name: "App",
   async mounted() {
@@ -32,8 +32,9 @@ export default {
     */
 
     //测试调用 mock 接口对应的请求函数
-    const result = await reqBanners();
-    console.log(result);
+    // this.$store.dispatch("getBanners");
+    // this.$store.dispatch("getFloors");
+
     //通过 vuex 异步 action 获取数据到 vuex 的 state 中进行管理
     this.$store.dispatch("getBaseCategoryList");
   },

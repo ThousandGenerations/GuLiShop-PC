@@ -1,4 +1,4 @@
-fanp<template>
+<template>
   <div class="menu">
     <TypeNav />
     <p>params 参数: keyword={{$route.params.keyword}}</p>
