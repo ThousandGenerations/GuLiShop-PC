@@ -1,82 +1,49 @@
 <template>
-  <div class="menu">
-    <div class="bottom_nav">
-      <ul>
-        <!-- L22 R26 -->
-        <li>
-          <a href="javascript:;">服装城</a>
-        </li>
-        <li>
-          <a href="javascript:;">美妆馆</a>
-        </li>
-        <li>
-          <a href="javascript:;">尚品汇超市</a>
-        </li>
-        <li>
-          <a href="javascript:;">全球购</a>
-        </li>
-        <li>
-          <a href="javascript:;">闪购</a>
-        </li>
-        <li>
-          <a href="javascript:;">团购</a>
-        </li>
-        <li>
-          <a href="javascript:;">有趣</a>
-        </li>
-        <li>
-          <a href="javascript:;">秒杀</a>
-        </li>
-      </ul>
-    </div>
-    <div class="left_list">
-      <!-- 210   460 -->
+  <div class="type-nav">
+    <div class="container">
       <div @mouseleave="hideCategorys" @mouseenter="showCategorys">
-        <div class="commodity">
-          <p>全部商品分类</p>
-        </div>
-        <!-- 使用 transtion 组件添加过渡效果 -->
-        <transition name="moveIn">
+        <h2 class="all">全部商品分类</h2>
+        <transition name="move">
+          <!-- 一旦有transition标签, vue会在显示/隐藏的过程中向div指定特定类名 -->
           <div class="sort" v-show="isShowFirst">
-            <!-- 找到 a 标签共同父级标签 -->
             <div class="all-sort-list2" @click="toSearch">
               <div
                 class="item"
-                v-for="(c1,index) in categoryList"
+                v-for="(c1, index) in categoryList"
                 :key="c1.categoryId"
-                :class="{item_on:index===currentIndex}"
+                :class="{item_on: index===currentIndex}"
                 @mouseenter="showSubCategorys(index)"
               >
                 <h3>
-                  <!-- 给对应 a 标签添加自定义属性 -->
-                  <!-- 
-                  自定义属性用法: data-开头 后面可以是大写或者小写都无所谓
-                  但是属性名在用的时候会自动转换为小写
-                  -->
-                  <!-- 还有就是自定义的属性想要是对应的属性值的话就必须使用 vue 的 bind 强制绑定 -->
                   <a
-                    href="javascript:;"
+                    href="javascript:"
                     :data-categoryName="c1.categoryName"
                     :data-category1Id="c1.categoryId"
                   >{{c1.categoryName}}</a>
+                  <!-- <a href="javascript:" @click="$router.push(`/search?categoryName=${c1.categoryName}&category1Id=${c1.categoryId}`)">{{c1.categoryName}}</a> -->
+                  <!-- <router-link :to="`/search?categoryName=${c1.categoryName}&category1Id=${c1.categoryId}`">{{c1.categoryName}}</router-link> -->
                 </h3>
                 <div class="item-list clearfix">
                   <div class="subitem">
                     <dl class="fore" v-for="c2 in c1.categoryChild" :key="c2.categoryId">
                       <dt>
                         <a
-                          href="javascript:;"
+                          href="javascript:"
                           :data-categoryName="c2.categoryName"
                           :data-category2Id="c2.categoryId"
                         >{{c2.categoryName}}</a>
+                        <!-- <a href="javascript:" @click="$router.push(`/search?categoryName=${c2.categoryName}&category2Id=${c2.categoryId}`)">{{c2.categoryName}}</a> -->
+                        <!-- <router-link :to="`/search?categoryName=${c2.categoryName}&category2Id=${c2.categoryId}`">{{c2.categoryName}}</router-link> -->
                       </dt>
                       <dd>
                         <em v-for="c3 in c2.categoryChild" :key="c3.categoryId">
                           <a
-                            href="javascript:;"
+                            href="javascript:"
                             :data-categoryName="c3.categoryName"
                             :data-category3Id="c3.categoryId"
                           >{{c3.categoryName}}</a>
+                          <!-- <a href="javascript:" @click="$router.push(`/search?categoryName=${c3.categoryName}&category3Id=${c3.categoryId}`)">{{c3.categoryName}}</a> -->
+                          <!-- <router-link :to="`/search?categoryName=${c3.categoryName}&category3Id=${c3.categoryId}`">{{c3.categoryName}}</router-link> -->
                         </em>
                       </dd>
                     </dl>
@@ -87,6 +54,17 @@
           </div>
         </transition>
       </div>
+
+      <nav class="nav">
+        <a href="###">服装城</a>
+        <a href="###">美妆馆</a>
+        <a href="###">尚品汇超市</a>
+        <a href="###">全球购</a>
+        <a href="###">闪购</a>
+        <a href="###">团购</a>
+        <a href="###">有趣</a>
+        <a href="###">秒杀</a>
+      </nav>
     </div>
   </div>
 </template>
@@ -223,154 +201,129 @@ export default {
 </script>
 
 <style lang="less" scoped>
-.bottom_nav {
-  position: absolute;
-  left: 0;
-  top: -45px;
-  width: 1200px;
-  height: 45px;
-  margin: 0 auto;
-  // background: pink;
-  float: left;
+.type-nav {
+  border-bottom: 2px solid #e1251b;
 
-  ul {
-    // width: 210px+26px;
-    margin-left: 210px;
-    height: 100%;
-    // background: skyblue;
-    float: left;
+  .container {
+    width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    position: relative;
 
-    li {
-      float: left;
-      font-size: 16px;
-      margin: 0 26px 0 22px;
-      text-align: center;
+    .all {
+      width: 210px;
+      height: 45px;
+      background-color: #e1251b;
       line-height: 45px;
+      text-align: center;
+      color: #fff;
+      font-size: 14px;
+      font-weight: bold;
+    }
 
+    .nav {
       a {
+        height: 45px;
+        margin: 0 22px;
+        line-height: 45px;
+        font-size: 16px;
         color: #333;
       }
     }
-  }
-}
 
-.left_list {
-  width: 210px;
-  height: 460px;
-  // background: #fafafa;
-  position: absolute;
-  left: 0;
-  top: -47px;
-  font-size: 14px;
+    .sort {
+      position: absolute;
+      left: 0;
+      top: 45px;
+      width: 210px;
+      height: 461px;
+      position: absolute;
+      background: #fafafa;
+      z-index: 999;
+      /* 显示的过渡样式 */
+      &.move-enter-active {
+        transition: all 0.5s;
+      }
+      /* 隐藏时的样式 */
+      &.move-enter {
+        opacity: 0;
+        height: 0;
+      }
 
-  .commodity {
-    width: 100%;
-    height: 45px;
-    background: #ea4a36;
+      .all-sort-list2 {
+        .item {
+          h3 {
+            line-height: 30px;
+            font-size: 14px;
+            font-weight: 400;
+            overflow: hidden;
+            padding: 0 20px;
+            margin: 0;
 
-    p {
-      color: #fff;
-      font-weight: 700;
-      text-align: center;
-      line-height: 45px;
-    }
-  }
-
-  .sort {
-    position: absolute;
-    left: 0;
-    top: 45px;
-    width: 210px;
-    height: 461px;
-    position: absolute;
-    background: #fafafa;
-    z-index: 999;
-
-    &.moveIn-enter-active {
-      transition: all 1s;
-      overflow: hidden;
-    }
-    //隐藏时候的样式
-    &.moveIn-enter {
-      opacity: 0;
-      height: 0;
-    }
-    .all-sort-list2 {
-      .item {
-        h3 {
-          line-height: 30px;
-          font-size: 14px;
-          font-weight: 400;
-          overflow: hidden;
-          padding: 0 20px;
-          margin: 0;
-
-          a {
-            color: #333;
+            a {
+              color: #333;
+            }
           }
-        }
 
-        .item-list {
-          display: none;
-          position: absolute;
-          width: 734px;
-          min-height: 460px;
-          background: #f7f7f7;
-          left: 210px;
-          border: 1px solid #ddd;
-          top: 0;
-          z-index: 9999 !important;
+          .item-list {
+            display: none;
+            position: absolute;
+            width: 734px;
+            min-height: 460px;
+            background: #f7f7f7;
+            left: 210px;
+            border: 1px solid #ddd;
+            top: 0;
+            z-index: 9999 !important;
 
-          .subitem {
-            float: left;
-            width: 666px;
-            padding: 0 4px 0 8px;
+            .subitem {
+              float: left;
+              width: 650px;
+              padding: 0 4px 0 8px;
 
-            & > dl {
-              border-top: 1px solid #eee;
-              padding: 6px 0;
-              overflow: hidden;
-              zoom: 1;
-
-              &.fore {
-                border-top: 0;
-              }
-
-              & > dt {
-                float: left;
-                width: 54px;
-                line-height: 22px;
-                text-align: right;
-                padding: 3px 6px 0 0;
-                font-weight: 700;
-                font-size: 12px;
-              }
-
-              & > dd {
-                float: left;
-                width: 415px;
-                padding: 3px 0 0;
+              dl {
+                border-top: 1px solid #eee;
+                padding: 6px 0;
                 overflow: hidden;
-                font-size: 12px;
+                zoom: 1;
 
-                em {
+                &.fore {
+                  border-top: 0;
+                }
+
+                dt {
                   float: left;
-                  height: 14px;
-                  line-height: 14px;
-                  padding: 0 8px;
-                  margin-top: 5px;
-                  border-left: 1px solid #ccc;
-                  font-size: 12px;
+                  width: 54px;
+                  line-height: 22px;
+                  text-align: right;
+                  padding: 3px 6px 0 0;
+                  font-weight: 700;
+                }
+
+                dd {
+                  float: left;
+                  width: 555px;
+                  padding: 3px 0 0;
+                  overflow: hidden;
+
+                  em {
+                    float: left;
+                    height: 14px;
+                    line-height: 14px;
+                    padding: 0 8px;
+                    margin-top: 5px;
+                    border-left: 1px solid #ccc;
+                  }
                 }
               }
             }
           }
-        }
 
-        &.item_on {
-          background: #ccc;
-          .item-list {
-            display: block;
+          &.item_on {
+            background: #ccc;
+            .item-list {
+              display: block;
+            }
           }
         }
       }

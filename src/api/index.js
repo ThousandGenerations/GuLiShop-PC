@@ -6,7 +6,6 @@
 //1 引入我们封装好的(创建的新的 axios 实例),也就是 ajax 文件
 import ajax from './ajax';
 import mockAjax from './mockAjax'
-import mockjs from 'mockjs';
 
 //下面就是项目中用到的所有请求接口函数
 //所有接口都是以 api 开头
@@ -53,3 +52,12 @@ export function reqLogin(mobile, password) {
 
 export const reqBanners = () => mockAjax('/banners')
 export const reqFloors = () => mockAjax('/floors')
+
+
+//search组件请求 相关配置
+//根据搜索的条件参数对象获取商品列表数据   
+export const reqProductList = (searchParams) => ajax({
+    url: '/list', //url
+    method: 'POST', //类型
+    data: searchParams //参数
+})

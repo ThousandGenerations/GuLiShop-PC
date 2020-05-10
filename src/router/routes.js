@@ -15,10 +15,12 @@ export default [{
         path: '/search/:keyword?',
         component: Search,
         // 将params参数和query参数映射成属性传入路由组件(通过 props 传参)
+        // 将params参数和query参数映射成属性传入路由组件
         props: route => ({
             keyword3: route.params.keyword,
             keyword4: route.query.keyword2
         })
+
 
     },
     {

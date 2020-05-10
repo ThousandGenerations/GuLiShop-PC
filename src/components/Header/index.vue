@@ -1,64 +1,49 @@
 <template>
-  <div>
-    <div class="header_wrap">
-      <div class="header">
-        <!-- 导航左侧 -->
-        <ul class="left_nav">
-          <li>尚品汇欢迎您！</li>
-          <li>
-            请
+  <header class="header">
+    <!-- 头部的第一行 -->
+    <div class="top">
+      <div class="container">
+        <div class="loginList">
+          <p>尚品汇欢迎您！</p>
+          <p>
+            <span>请</span>
             <router-link to="/login">登录</router-link>
-            <!-- <a href="javascript:;">登录</a> -->
-          </li>
-          <li>
-            <router-link to="/register">免费注册</router-link>
-            <!-- <a href="javascript:;">免费注册</a> -->
-          </li>
-        </ul>
-        <ul class="right_nav">
-          <li>
-            <a href="javascript:;">我的订单</a>
-          </li>
-          <li>
-            <a href="javascript:;">我的购物车</a>
-          </li>
-          <li>
-            <a href="javascript:;">我的尚品汇</a>
-          </li>
-          <li>
-            <a href="javascript:;">尚品汇会员</a>
-          </li>
-          <li>
-            <a href="javascript:;">企业采购</a>
-          </li>
-          <li>
-            <a href="javascript:;">关注尚品汇</a>
-          </li>
-          <li>
-            <a href="javascript:;">合作招商</a>
-          </li>
-          <li>
-            <a href="javascript:;">商家后台</a>
-          </li>
-        </ul>
+            <router-link to="/register" class="register">免费注册</router-link>
+          </p>
+        </div>
+        <div class="typeList">
+          <a href="###">我的订单</a>
+          <a href="###">我的购物车</a>
+          <a href="###">我的尚品汇</a>
+          <a href="###">尚品汇会员</a>
+          <a href="###">企业采购</a>
+          <a href="###">关注尚品汇</a>
+          <a href="###">合作招商</a>
+          <a href="###">商家后台</a>
+        </div>
       </div>
     </div>
-    <div class="logoAndSearch">
-      <div class="logoAndSearch_wrap">
-        <div class="logo clearFix">
-          <h1 class="clearFix">
-            <router-link to="/"></router-link>
-            <!-- <a href="javascript:;"></a> -->
-            尚硅谷
-          </h1>
-        </div>
-        <form action="##" class="search" @from.prevent>
-          <input type="text" v-model="keyword" />
-          <button type="button" @click="search">搜索</button>
+    <!--头部第二行 搜索区域-->
+    <div class="bottom">
+      <h1 class="logoArea">
+        <router-link class="logo" to="/">
+          <img src="./images/Logo.png" alt />
+        </router-link>
+      </h1>
+      <div class="searchArea">
+        <form action="###" class="searchForm">
+          <input
+            type="text"
+            id="autocomplete"
+            placeholder="请输入关键字搜索"
+            class="input-error input-xxlarge"
+            v-model="keyword"
+          />
+          <button class="sui-btn btn-xlarge btn-danger" @click.prevent="search">搜索</button>
         </form>
       </div>
     </div>
-  </div>
+  </header>
 </template>
 
 <script>
@@ -67,10 +52,15 @@ export default {
 
   data() {
     return {
-      keyword: "atguigu"
+      keyword: ""
     };
   },
-
+  mounted() {
+    //在 header 组件,通过时间总线对象绑定事件监听来接收消息,然后更新数据
+    this.$bus.$on("removeKeyword", () => {
+      this.keyword = "";
+    });
+  },
   methods: {
     search() {
       //编程式路由导航
@@ -122,133 +112,108 @@ export default {
       location.query = query;
 
       //跳转到 search
-      this.$router.push(location);
+      //新增:如果当前在 search 组件,使用 replace()的方式跳转.如果不是,就是用 push 的方式跳转
+      if (this.$route.path.indexOf("/search") === 0) {
+        //说明在 search 组件,使用 replace 的方式
+        this.$router.replace(location);
+      } else {
+        this.$router.push(location);
+      }
     }
   }
 };
 </script>
 
 <style lang="less" scoped>
-.header_wrap {
-  width: 100%;
-  height: 30px;
-  background: #eaeaea;
+.header {
+  & > .top {
+    background-color: #eaeaea;
+    height: 30px;
+    line-height: 30px;
 
-  .header {
-    font-size: 12px;
-    width: 1200px;
-    height: 100%;
-    margin: 0 auto;
+    .container {
+      width: 1200px;
+      margin: 0 auto;
+      overflow: hidden;
 
-    .left_nav {
-      float: left;
-
-      li {
+      .loginList {
         float: left;
-        line-height: 30px;
 
-        &:first-child {
+        p {
+          float: left;
           margin-right: 10px;
-        }
 
-        &:last-child {
-          margin-left: 9px;
-
-          a {
+          .register {
             border-left: 1px solid #b3aeae;
-            padding-left: 5px;
+            padding: 0 5px;
+            margin-left: 5px;
           }
         }
-
-        a:hover {
-          color: #666666 !important;
-        }
       }
-    }
 
-    .right_nav {
-      float: right;
-
-      li {
-        float: left;
-        line-height: 30px;
-        // box-sizing: border-box;
+      .typeList {
+        float: right;
 
         a {
-          width: 85px;
-          padding: 0 14px 0 10px;
-          border-right: 1px solid #b3aeae;
-        }
+          padding: 0 10px;
 
-        &:last-child > a {
-          padding: 0 10px 0 10px;
-          border: none;
+          & + a {
+            border-left: 1px solid #b3aeae;
+          }
         }
       }
     }
   }
-}
-.logoAndSearch {
-  border-bottom: 2px solid #ea4a36;
 
-  .logoAndSearch_wrap {
-    // position: relative;
+  & > .bottom {
     width: 1200px;
-    height: 151px;
-    // background: pink;
     margin: 0 auto;
-    // float: left;
+    overflow: hidden;
 
-    .logo {
+    .logoArea {
       float: left;
 
-      h1 {
-        width: 100%;
-        height: 100%;
-        font-size: 0;
-        float: left;
-        // overflow: hidden;
-
-        a {
-          display: block;
+      .logo {
+        img {
           width: 175px;
-          height: 56px;
-          float: left;
-          // background: pink;
-          background: url("./images/Logo.png") no-repeat;
           margin: 25px 45px;
         }
       }
     }
 
-    .search {
-      width: 558px;
-      height: 32px;
-      // background: pink;
+    .searchArea {
       float: right;
       margin-top: 35px;
-      // position: absolute;
-      // left: 0;
-      // top: 0;
 
-      input {
-        float: left;
-        width: 490px;
-        height: 100%;
-        border: 2px solid #ea4a36;
-        box-sizing: border-box;
-        padding: 0 4px;
-      }
+      .searchForm {
+        overflow: hidden;
 
-      button {
-        float: left;
-        width: 68px;
-        height: 100%;
-        background: #ea4a36;
-        color: #ffffff;
-        text-align: center;
-        // border: 2px solid @color;
-        // box-sizing: border-box;
+        input {
+          box-sizing: border-box;
+          width: 490px;
+          height: 32px;
+          padding: 0px 4px;
+          border: 2px solid #ea4a36;
+          float: left;
+
+          &:focus {
+            outline: none;
+          }
+        }
+
+        button {
+          height: 32px;
+          width: 68px;
+          background-color: #ea4a36;
+          border: none;
+          color: #fff;
+          float: left;
+          cursor: pointer;
+
+          &:focus {
+            outline: none;
+          }
+        }
       }
     }
   }

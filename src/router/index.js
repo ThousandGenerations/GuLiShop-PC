@@ -53,7 +53,7 @@ VueRouter.prototype.replace = function (location, onComplete, onAbort) {
     if (onComplete || onAbort) {
         originReplace.call(this, location, onComplete, onAbort)
     } else {
-        return originReplace.call(this.location).catch(e => {
+        return originReplace.call(this, location).catch(e => {
             console.log('catch error2')
             return new Promise(() => {
 

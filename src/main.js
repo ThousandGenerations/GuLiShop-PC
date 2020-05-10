@@ -5,7 +5,7 @@ import App from '@/App'
 import router from './router'
 //引入swiper
 // import VueAwesomeSwiper from 'vue-awesome-swiper'
-import 'swiper/css/swiper.css'
+import 'swiper/css/swiper.min.css'
 //引入store
 import store from './store'
 //引入TypeNav组件
@@ -24,6 +24,10 @@ Vue.component('Carousel', Carousel)
 
 
 new Vue({
+  //给 vue 的实例对象指定事件总线对象(也就是vm)
+  beforeCreate() {
+    Vue.prototype.$bus = this
+  },
   render: h => h(App), //将 App 组建的对象界面渲染到页面上
   router, //配置路由器
   store, //配置 vuex 的 store 对象,所有组件对象都可以通过$store 属性得到 store 对象
