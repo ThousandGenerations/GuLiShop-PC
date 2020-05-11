@@ -5,7 +5,7 @@ import Home from '@/pages/Home'
 import Search from '@/pages/Search'
 import Register from '@/pages/Register'
 import Login from '@/pages/Login'
-
+import Detail from '@/pages/Detail'
 export default [{
         path: '/', //url 地址
         component: Home //路由所在文件,因为文件名是 index,所以可以不写,默认就是找 index
@@ -37,5 +37,11 @@ export default [{
             isHideFooter: true
         }
     },
+    {
+        path: '/detail',
+        name: 'detail/:id',
+        component: Detail,
+    },
+
 
 ]

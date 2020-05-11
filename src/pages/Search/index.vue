@@ -42,8 +42,11 @@
           <div class="sui-navbar">
             <div class="navbar-inner filter">
               <ul class="sui-nav">
-                <li class="active">
-                  <a href="#">综合</a>
+                <li :class="{active:isActive('1')}" @click="setOrder('1')">
+                  <a href="jacascript:;">
+                    综合
+                    <i class="iconfont" :class="orderIcon" v-if="isActive('1')"></i>
+                  </a>
                 </li>
                 <li>
                   <a href="#">销量</a>
@@ -54,11 +57,11 @@
                 <li>
                   <a href="#">评价</a>
                 </li>
-                <li>
-                  <a href="#">价格⬆</a>
-                </li>
-                <li>
-                  <a href="#">价格⬇</a>
+                <li :class="{active:isActive('2')}" @click="setOrder('2')">
+                  <a href="javascript:;">
+                    价格
+                    <i class="iconfont" :class="orderIcon" v-if="isActive('2')"></i>
+                  </a>
                 </li>
               </ul>
             </div>
@@ -69,20 +72,22 @@
               <li class="yui3-u-1-5" v-for="goods in productList.goodsList" :key="goods.id">
                 <div class="list-wrap">
                   <div class="p-img">
-                    <a href="item.html" target="_blank">
+                    <router-link to="/detail">
                       <img :src="goods.defaultImg" />
-                    </a>
+                    </router-link>
                   </div>
-                  <div class="price">
-                    <strong>
-                      <em>¥&nbsp</em>
-                      <i>{{goods.price}}</i>
-                    </strong>
-                  </div>
+                  <router-link to="/detail">
+                    <div class="price">
+                      <strong>
+                        <em>¥&nbsp;</em>
+                        <i>{{goods.price}}</i>
+                      </strong>
+                    </div>
+                  </router-link>
                   <div class="attr">
                     <a href="javascript:;">{{goods.title}}</a>
                   </div>
-                  <div class="commit">
+                  <div class="commit" @click="toDetail">
                     <i class="command">
                       已有
                       <span>2000</span>人评价
@@ -100,39 +105,22 @@
               </li>
             </ul>
           </div>
-          <div class="fr page">
-            <div class="sui-pagination clearfix">
-              <ul>
-                <li class="prev disabled">
-                  <a href="#">«上一页</a>
-                </li>
-                <li class="active">
-                  <a href="#">1</a>
-                </li>
-                <li>
-                  <a href="#">2</a>
-                </li>
-                <li>
-                  <a href="#">3</a>
-                </li>
-                <li>
-                  <a href="#">4</a>
-                </li>
-                <li>
-                  <a href="#">5</a>
-                </li>
-                <li class="dotted">
-                  <span>...</span>
-                </li>
-                <li class="next">
-                  <a href="#">下一页»</a>
-                </li>
-              </ul>
-              <div>
-                <span>共10页&nbsp;</span>
-              </div>
-            </div>
-          </div>
+          <!-- 
+            引入分页组件(组件已经在全局注册),组件通过props接受属性
+            通过属性传值
+            currentPage:当前页码
+            pageSize:每页商品数量
+            :total="productList.total" 总数量
+            :showPageNo="3" 连续显示数量
+             @currentChange="handlCurrentChange" 自定义事件,定义的是当前点击的页码
+          -->
+          <Pagination
+            :currentPage="options.pageNo"
+            :pageSize="options.pageSize"
+            :total="productList.total"
+            :showPageNo="3"
+            @currentChange="handlCurrentChange"
+          />
         </div>
       </div>
     </div>
@@ -142,13 +130,61 @@
 <script>
 import { mapState } from "vuex"; //引入mapState
 import SearchSelector from "./SearchSelector/SearchSelector";
+//引入详情组件
+import Detail from "@/pages/Detail";
 export default {
   name: "Search",
   components: {
-    SearchSelector
+    SearchSelector,
+    Detail
   },
   data() {
     return {
+      /* 
+        响应式数据对象
+            现在options就是一个响应式的数据对象,当对象中的属性值发生改变的时候,视图就会发生改变==>响应式
+            但是:
+            添加属性:
+              在options对象中直接添加新属性的时候,这个时候,新添加的属性不是响应式的数据
+            错误方式:this.options.a = 'xxx' =>不是响应式,不会自动更新界面
+            原因:vue内部给响应式属性进行劫持操作(没有对象的setter监视)
+            正确方式:
+                使用vue语法 $set
+                vm.#set(target,key,value)
+                Vue.set(target,key,value)
+                为响应式对象添加一个属性,确保新属性也是响应式的,并且能够触发试图更新
+            删除属性:
+              错误方式:
+                  直接删除: delete this.options.xxx ==> 不会自动更新视图界面
+              原因:
+                  vue内部给响应式属性添加的setter,只能监视属性值的改变,不能监视属性的删除操作
+              正确方式:
+                  vm.$delete(target,value)
+                  Vue.delete(target,key)
+                删除属性,同时更新界面
+      */
+      /* 
+        排序:
+          order数据的结构
+          组成:orderFlag:orderType
+          例子:
+          综合:
+            1:desc(orderFlag:orderType)
+            1:asc
+          价格:
+            2:desc
+            2:asc
+        思路:
+          哪个排序项选中?
+            根据当前order中的orderFlag来确定 1就是综合 2就是价格
+          根据哪个排序项进行什么方式排序?
+            哪个排序项? 根据当前order中的orderFlag来确定  
+            什么方式排序? 根据当前order中的orderType来确定  desc降序 asc升序 
+          点击切换排序项和排序方式
+            点击当前排序项:切换排序方式后进行搜索  desc的话换成asc  asc的话换成desc
+            点击不是当前排序项的话:切换成其他的排序项,排序方式为降序  //判断orderFlag
+     */
+
       //定义所有 search 的请求参数的数据配置对象
       options: {
         category1Id: "", // 一级分类ID
@@ -158,7 +194,7 @@ export default {
         keyword: "", // 关键字keyword
         trademark: "", // 品牌:格式    "ID:品牌名称"
         props: [], // 商品属性的数组: ["属性ID:属性值:属性名"] 示例: ["2:6.0～6.24英寸:屏幕尺寸"]
-        order: "1:desc", // 排序方式  1: 综合,2: 价格 asc: 升序,desc: 降序  示例: "1:desc"
+        order: "1:asc", // 排序方式  1: 综合,2: 价格 asc: 升序,desc: 降序  示例: "1:desc"
         pageNo: 1, // 当前页码
         pageSize: 10 // 每页数量
       }
@@ -177,6 +213,56 @@ export default {
 
   //定义一个方法来管理,当query 和 params 发生改变的时候更新 options 里面对应的数据
   methods: {
+    //定义编程式路由跳转到详情
+    toDetail() {
+      this.$router.push("/Detail");
+    },
+    //异步获取指定页码的分页商品数据
+    // 默认指定为第一页
+    //定义一个函数形参默认值 ,不传就是第一页
+    getProductList(pageNo = 1) {
+      //更新options里面的数据
+      this.options.pageNo = pageNo;
+      //再请求获取最新数据
+      this.$store.dispatch("getProductList", this.options);
+    },
+    //自定义事件的方法
+    handlCurrentChange(currentPage) {
+      //更新options里面的数据pageNo
+      (this.options.pageNo = currentPage),
+        //重新请求获取指定页码的数据显示
+        this.$store.dispatch("getProductList", this.options);
+    },
+    //点击切换升降序
+    setOrder(flag) {
+      //flag = 0/1
+      //思路:
+      //需要得到的是之前的orderFlag和之前的orderType,然后根据flag的值修改
+      let [orderFlag, orderType] = this.options.order.split(":");
+      // console.log(orderFlag,orderType)
+      //点击当前排序项的时候修改数据
+      //判断如果当前点击的是同一个选项修改他的箭头(升降序),如果不是就切换当前选项,修改为降序
+      if (flag === orderFlag) {
+        orderType = orderType === "desc" ? "asc" : "desc";
+      } else {
+        //点击的不是当前选项
+        orderFlag = flag; //切换orderFlag为当前传入的flag的值
+        orderType = "desc"; //修改为降序
+      }
+      //将新order的值传给options,重新发送请求
+      this.options.order = orderFlag + ":" + orderType;
+      //重新发送请求,刷新页面
+      // console.log(orderFlag, orderType);
+      // this.$store.dispatch("getProductList", this.options);
+      this.getProductList();
+    },
+
+    //当前点击的排序项(综合/价格)
+    //判断传入的值orderFlag的排序项是不是当前项
+    isActive(orderFlag) {
+      return this.options.order.indexOf(orderFlag) !== -1;
+    },
+
     //移除关键字
     removeKeyword() {
       //将配置对象关键字置为空
@@ -184,7 +270,10 @@ export default {
       //重新发送请求,获取最新数据
       // this.$store.dispatch("getProductList", this.options);
       //重置跳转到当前路由,不再携带 params 参数,只携带原来的 query 参数
-      this.$router.replace({ name: "search", query: this.$route.query });
+      this.$router.replace({
+        name: "search",
+        query: this.$route.query
+      });
       //通知 header 组件也删除输入的关键字
       //在 search,通过实践总线对象分发事件
       this.$bus.$emit("removeKeyword");
@@ -192,15 +281,17 @@ export default {
     //移除品牌搜索条件
     removetrademark() {
       //重置数据
-      (this.options.trademark = ""),
-        this.$store.dispatch("getProductList", this.options);
+      this.$delete(this.options, "trademark");
+      //请求数据
+      this.getProductList();
     },
     //移除 props 数据
     removeProp(index) {
       //删除对应的 props
       this.options.props.splice(index, 1);
       //重新请求数据显示
-      this.$store.dispatch("getProductList", this, options);
+      // this.$store.dispatch("getProductList", this.options);
+      this.getProductList();
     },
     removeCategory() {
       //重置分类的条件数据
@@ -244,14 +335,16 @@ export default {
       //向 options 的 props 的数组后面添加一个属性条件,使用 push 方法
       this.options.props.push(prop);
       //重新发送请求获取最新数据
-      this.$store.dispatch("getProductList", this.options);
+      // this.$store.dispatch("getProductList", this.options);
+      this.getProductList();
     },
     //设置新的品牌条件数据,这里用的是子组件传递的数据,定义的是子组件的方法,数据源在这里,方法就要定义在这里
     setTrademark(trademark) {
       //更新 options 里面的trademark
       this.options.trademark = trademark;
       //重新发送请求,获取最新数据的列表显示
-      this.$store.dispatch("getProductList", this.options);
+      this.getProductList();
+      // this.$store.dispatch("getProductList", this.options);
     }
   },
   //只是这样定义了方法还是不够的,相同路由重复点击不更新数据，应该定义监视属性,监视到路由发生跳转时,参数发生变化的时候更新options的数据,还要更新页面重新请求数据
@@ -268,7 +361,13 @@ export default {
     ...mapState({
       //接收 state中的productList数据并且使用 mapState辅助函数 展开在计算属性中
       productList: state => state.search.productList
-    })
+    }),
+    //向上还是向下的箭头显示,通过计算属性计算
+    orderIcon() {
+      return this.options.order.split(":")[1] === "desc"
+        ? "icon-icondown"
+        : "icon-iconup";
+    }
   }
 };
 </script>

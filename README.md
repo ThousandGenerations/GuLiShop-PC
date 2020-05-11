@@ -1,6 +1,5 @@
-# 谷粒商城PC项目笔记
 
-## [20200509-更新笔记](http://note.youdao.com/noteshare?id=dda518f74ef97af98494e2e9e3c8ec7a)
+# 谷粒商城PC项目笔记
 
 ## 路由跳转以及传参的几个问题汇总
 * 路由组件
@@ -606,15 +605,412 @@ this.$store.dispatch("getBaseCategoryList");
        this.initSwiper() //这个时候就应该直接创建 Swiper 对象
      }
    },
-    ```
+   ```
+    
+## 实现search组件
 
+### search组件的动态展示
+* 定义api发送ajax请求  请求地址：/list
+```js
+//search组件请求 相关配置
+//根据搜索的条件参数对象获取商品列表数据   
+export const reqProductList = (searchParams) => ajax({
+url: '/list',    //请求地址url
+method: 'POST', //请求的类型
+data: searchParams //携带参数
+})
+```
+* 使用vuex模块化方式管理请求状态,定义state/mutations/actions/getter
+* 使用dispatch()获取数据以及扩展函数...mapState()获取状态数据
+* 搜索条件和参数
+```js
+data() {
+    return {
+      //定义所有 search 的请求参数的数据配置对象
+      options: {
+        category1Id: "", // 一级分类ID
+        category2Id: "", // 二级分类ID
+        category3Id: "", // 三级分类ID
+        categoryName: "", // 分类的名称
+        keyword: "", // 关键字keyword
+        trademark: "", // 品牌:格式    "ID:品牌名称"
+        props: [], // 商品属性的数组: ["属性ID:属性值:属性名"] 示例: ["2:6.0～6.24英寸:屏幕尺寸"]
+        order: "1:desc", // 排序方式  1: 综合,2: 价格 asc: 升序,desc: 降序  示例: "1:desc"
+        pageNo: 1, // 当前页码
+        pageSize: 10 // 每页数量
+      }
+    };
+  },    
+```
+* 根据共享组件TypeNav菜单按钮方式访问Search组件，或者keyword关键词进入搜索组件,或者直接访问search组件
+* 分类
+    * ==> query参数：category1Id/category2Id/category3Id/categoryName
+    * ==> params参数：keyword
+* 定义根据query和params参数来发送请求更新数据时候的方法
+```js
+updateOptions() {
+      //根据 query 和 params 参数更新options
+      const {
+        //利用解构赋值,将$route 里面的 query 参数的值结构出来
+        categoryName,
+        category1Id,
+        category2Id,
+        category3Id
+      } = this.$route.query;
+      //同样利用解构赋值,将$route 的关键字 params 参数解构出来
+      const { keyword } = this.$route.params;
+      //取到 params 和 query 的参数值之后,添加到 data 中定义的 options 对象里面
+      this.options = {
+        ...this.options, //扩展运算符,除了咱们要修改的属性,其他属性也一并添加进来 ,方便函数复用
+        category1Id,
+        category2Id,
+        category3Id,
+        categoryName,
+        keyword
+      };
+    },
+```
+* 在beformount()生命周期函数中创建初始化组件数据
+```js
+  //定义初始化异步更新 data 中的数据
+  beforeMount() {
+    this.updateOptions(); //调用定义的更新options数据的方法 
+  },
+```
+* 在mounted生命周期函数中定义异步更新时候的发送请求(本身访问search组件或者没有请求参数的情况下发送异步请求更新代码)
+```js
+  //定义初始异步更新的代码
+  mounted() {
+    //在初始化搜索组件的时候,异步更新
+    // console.log("1111");
+    this.$store.dispatch("getProductList", this.options);
+  },
+```
+### 相同路由跳转，路由组件对象不会重新创建
+* 问题：如果当前已经在Search组件中，在通过搜索按钮或者分类菜单按钮来跳转到search组件，应该重新获取数据，为什么没有？
+* 原因：当前在A组件，跳转到A组件的时候，路由组件对象是不会重新创建的,从而就不会执行初始化生命周期函数中的请求代码，所以数据不变，以为根本没有发送请求
+* 解决：这个时候就应该想到监视属性，监视路由对象$route的变化，同组件跳转的时候$route是重新产生，之后再根据所对应的query参数以及params参数更新options对象的数据就可以了
+```js
+  //只是这样定义了方法还是不够的,相同路由重复点击不更新数据，应该定义监视属性,监视到路由发生跳转时,参数发生变化的时候更新options的数据,还要更新页面重新请求数据
+  watch: {
+    //当路由跳转时只有路由传参数发生变化的时候
+    $route() {
+      this.updateOptions();
+      //请求数据,再次调用接口
+      this.$store.dispatch("getProductList", this.options);
+    }
+  },
+```
+### 根据分类和搜索关键词进行搜索
+* 删除分类和关键词的条件
+    * 给对应的数据显示的删除按钮绑定点击事件，定义方法
+    * 修改options对象中对应的数据为空串，就可以做到删除
+    * 但是这个地方必须重新发送请求获取最新数据
+* 问题1
+    * 问题：删除分类菜单的数据以及关键词的数据之后，为什么地址栏还是有数据显示？
+    * 原因: 删除条件的时候，并没有做更新query或者params参数的，也就是没有修改路由参数数据
+    * 解决：删除分类数据的时候，不再携带query参数，只携带之前的params的参数就可以，删除params是一个道理
+```js
+    //移除关键字
+    removeKeyword() {
+      //将配置对象关键字置为空
+      this.options.keyword = "";
+      //重新发送请求,获取最新数据
+      // this.$store.dispatch("getProductList", this.options);
+      //重置跳转到当前路由,不再携带 params 参数,只携带原来的 query 参数
+      this.$router.replace({ name: "search", query: this.$route.query });
+      //通知 header 组件也删除输入的关键字
+      //在 search,通过实践总线对象分发事件
+      this.$bus.$emit("removeKeyword");
+    },
+    
+    
+    removeCategory() {
+      //重置分类的条件数据
+      this.options.categoryName = ""; //将名字置为空
+      this.options.category1Id = ""; //将一级 id 置为空
+      this.options.category2Id = ""; //将二级 id 置为空
+      this.options.category3Id = ""; //将三级 id 置为空
+      //重新获取数据
+
+      // this.$store.dispatch("getProductList", this.options); //这样不行
+      //重新跳转到当前路由,不再携带 query 参数,只携带原本的 params 参数
+      this.$router.replace(this.$route.path); //$route.path 不带 query 参数,但是带有 params 参数(如果存在)
+    },
+```
+* 问题2
+    * 问题：删除关键字的时候，搜索框input没有同步更新，还是原来数据不变
+    * 原因：两个组件Header和Search之间没有建立联系，无法操作input框中的数据
+    * 解决：
+        * 定义全局事件总线，在vue的原型上（prototype）添加$bus对象
+        * Search组件分发事件，Header组件通过事件总线对象绑定事件来接收消息
+        * 这个时候两个组件之间就会建立联系，修改数据的时候就会更新数据
+```js
+//在 search,通过实践总线对象分发事件
+this.$bus.$emit("removeKeyword");
+
+
+  mounted() {
+    //在 header 组件,通过时间总线对象绑定事件监听来接收消息,然后更新数据
+    this.$bus.$on("removeKeyword", () => {
+      this.keyword = "";
+    });
+  },
+```
+* 问题3
+    * 问题：从Home组件跳转到Search组件的时候在Search界面的时候，多次进行搜索，之后在浏览器点击回退按钮的时候不能直接回退到home组件，而是显示上次搜索的内容
+    * 原因：因为路由跳转的时候全部用的是push方法，push方法会记录每次一上一层的页面，从而回退
+    * 解决：在Home跳转Search的时候使用push方法，在Search组件内部跳转的时候使用replace的方法
+```js
+//跳转到 search
+  //新增:如果当前在 search 组件,使用 replace()的方式跳转.如果不是,就是用 push 的方式跳转
+  if (this.$route.path.indexOf("/search") === 0) {
+    //说明在 search 组件,使用 replace 的方式
+    this.$router.replace(location);
+  } else {
+    this.$router.push(location);
+  }
+```
+* 问题4
+    * 问题：在点击搜索按钮的时候页面自动跳转了，但是参数不对了
+    * 原因：form自动提交表单
+    * 解决：绑定事件的时候设置.prevent的方式禁止浏览器默认行为
+```html
+<form action="###" class="searchForm">
+  <input
+    type="text"
+    id="autocomplete"
+    placeholder="请输入关键字搜索"
+    class="input-error input-xxlarge"
+    v-model="keyword"
+  />
+  <button class="sui-btn btn-xlarge btn-danger" @click.prevent="search">搜索</button>
+</form>
+```
+### 根据品牌名字进行搜索
+* 子组件：绑定事件监听，让父组件去更新options对象中的数据中的props属性值，更新的值（该更新的数据）由子组件来传给父组件，（子组件向父组件进行通信）
+* 父组件：定义更新数据的方法，接收子组件传来的值，之后重新发送请求获取最新数据
+
+### 根据商品属性进行搜索
+* 子组件：绑定事件监听，传入点击时候的参数，让父组件去更新options对象中的数据中的props属性值，更新的值由子组件来传给父组件，（子组件向父组件进行通信）
+* 父组件：定义更新数据的方法，接收子组件传来的值，之后想props数组后（push方法）添加对应的值 `属性id:属性值：属性名`
+    * 注意：
+        * 有可能不需要再添加了（之前用户已经点击过对应的商品属性了），这个时候用到数组的splice方法，判断是不是!==-1(如果是不等于-1的情况下，就说明用户之前并没有点击过，如果不是就说明之前已经添加过了)
+
+## 响应式数据对象
+* 什么是响应式?
+    * 响应式,data或者state中的数据/对象,内部所有层次的数据在更新的时候,所对应的界面就会自动更新,这就是响应式
+* 给响应式对象添加新的属性
+    * 错误方式:
+        * this.xxx.a = 'b' ==>这样添加新的属性和属性值,不会是响应式的数据,也不会自动更新界面
+    * 原因:
+        * vue内部没有对添加的属性进行监视(挟持)操作,没有对象的setter监视
+    * 正确的方式:
+        * 通过Vue的实例对象vm中的$set方法添加:`vm.$set('target(目标对象),key,value')`
+        * 通过Vue构造函数中的set方法添加:`Vue.set('target','key','value')`
+* 给响应式的对象删除属性
+    * 错误方式:
+        * 直接删除 : `delete this.options.xxx` ==> 不是响应式的数据,不会自动更新数据
+    * 原因:
+        * Vue内部给响应式属性添加的setter,只能监视属性值的变化,不能监视属性的删除
+    * 正确方式:
+        * 通过Vue的实例对象vm中的$delete方法 `vm.$delete(target,key)`
+        * 通过Vue构造函数中的delete方法添加:`Vue.delete(target,key)`
+## search组件的排序功能
+<!--![image](4E86F74F1B8540128DD41A9F7FE441BC)-->
+* 首先查看api文档中排序请求返回的数据结构
+<!--//![image](E3CC5402E11F4D20878B2927BAEE5631)-->
+* 根据文档可知,数据结构为: 1:desc  2:asc
+### 哪个排序项被选中?
+* 排序:
+    * order数据的结构
+    * 组成:orderFlag:orderType
+* 例子:
+    * 综合:
+        * 1:desc(orderFlag:orderType)
+        * 1:asc
+    * 价格:
+        *2:desc
+        *2:asc
+* 思路:
+    * 哪个排序项选中?
+        * 根据当前order中的orderFlag来确定 1就是综合 2就是价格
+        ```html
+        <li :class="{active:isActive('1')}" @click="setOrder('1')"> // 为active定义方法,将当前对应的orderFlag传入 (绑定点击监听同理)
+          <a href="jacascript:;">
+            综合
+            <i class="iconfont" :class="orderIcon" v-if="isActive('1')"></i>  //升序降序的小图标 传入当前对应的orderType
+          </a>
+        </li>
+        ```
+        ```js
+        //当前点击的排序项(综合/价格)
+        //判断传入的值orderFlag的排序项是不是当前项
+        isActive(orderFlag) {
+          return this.options.order.indexOf(orderFlag) !== -1; //返回布尔值,用于判断active类名加给哪个元素 //将传入的值和options对象中的orderFlag对比,使用indexOf方法,如果是对应的值就会返回其对应的下标,如果没有就是-1
+        },
+        ```
+* 根据哪个排序项进行什么方式排序?
+    * 哪个排序项? 根据当前order中的orderFlag来确定,判断如果是1就是点击'综合'排序,如果是2就是给'价格排序
+    * 什么方式排序? 根据当前order中的orderType来确定,判断是desc就是降序,asc就是升序 
+* 点击切换排序项和排序方式
+    * 点击当前排序项:切换排序方式后进行搜索  desc的话换成asc  asc的话换成desc
+    * 点击不是当前排序项的话:切换成其他的排序项,排序方式为降序  //判断orderFlag
+```js
+ //点击切换升降序
+    setOrder(flag) {
+      //flag = 0/1
+      //思路:
+      //需要得到的是之前的orderFlag和之前的orderType,然后根据flag的值修改
+      let [orderFlag, orderType] = this.options.order.split(":"); //使用数组的split方法按照':'进行拆分,前面为当前的排序项,后面为当前排序方式
+      // console.log(orderFlag,orderType)
+      //点击当前排序项的时候修改数据
+      //判断如果当前点击的是同一个选项修改他的箭头(升降序),如果不是就切换当前选项,修改为降序
+      if (flag === orderFlag) {
+        orderType = orderType === "desc" ? "asc" : "desc";
+      } else {
+        //点击的不是当前选项
+        orderFlag = flag; //切换orderFlag为当前传入的flag的值
+        orderType = "desc"; //修改为降序
+      }
+      //将新order的值传给options,重新发送请求
+      this.options.order = orderFlag + ":" + orderType;  //重新拼接最新的flag和type 
+      //重新发送请求,刷新页面
+      // console.log(orderFlag, orderType);
+      // this.$store.dispatch("getProductList", this.options);
+      // this.getProductList();
+    },
+```
+## 难点:分页选项
+* 自定义可服用的组件的基本步骤
+    * 首先先实现静态的模板
+    * 设计要从外部接受的数据(props)
+        * currentPage: 当前页码
+        * pageSize: 每页数量
+        * total: 总数量
+        * showPageNo: 连续数码数
+    * 设计内部包含的数据(data)
+        * myCurrentpage:当前页码(当前页码可以从外部传入,当然内部也需要定义,将外部传入的数据作为当前页码的初始值)
+        * 设计基于props和date的计算属性
+* 总页数的计算:
+```js
+    totalPages() {  //定义总页数方法
+      //求总页数  就是商品总数量/每页显示商品的数量
+      const { total, pageSize } = this; //将组件实例对象中的total和pageSize解构出来
+      return Math.ceil(total / pageSize); // 向上取整
+      // 为什么要向上取整?
+      // 1.假设总数量是 10 ,每页商品数量是3  求总页数就是 10/3 = 3.333 但是你不可能只显示3页,就算最后一页只有一个商品,也算一页,所以要向上取整
+    },
+```
+* 计算连续页码start(开始页)和end(结束页)==>例如1...2[3]4...
+```js
+    /* 
+      计算连续页码start(开始页)和end(结束页) 例如 1 ... 2[3]4 ...
+      思路:
+        定义一个对象,假设里面存储{start:2,end:4}
+        statr最小值应该是1  [1] 2 3 
+        end最大值应该是totalPages (上面计算出来的总页数)
+      依赖数据应该有:
+        myCurrentPage(定义的当前页码的初始值) / showPageNo(当前连续页码数) / totalPages(上面计算出来的总页数)
+    */
+    startEnd() {
+      //先定义准备好start和end
+      let start, end;
+      
+      //取出依赖数据
+      
+      const { myCurrentPage, showPageNo, totalPages } = this; //利用解构赋值,值通过porps已经声明,都在组件的实例对象里面
+      //*********** 计算start(起始页)
+      
+      /* 
+        举例:
+            myCurrentPage,        showPageNo,           totalPages
+          2(当前默认初始页)        3(连续页码)           8(总页码)   现在我们想要的就是 ==> 1[2]3  
+          所以当前的算法应该就是:
+          起始页(start):
+              初始页(2) - 向下取整 ( 连续页码 / 2 )  // 2 - 3/2 = 1 (起始页)
+      
+      */
+      
+      start = myCurrentPage - Math.floor(showPageNo / 2);  //初步求出起始页的对应的值
+      
+      // 到这里我们发现还是有新问题:如果当前是下面这种情况的话
+      // 举例:
+      /* 
+          myCurrentPage, showPageNo, totalPages
+                2           5            8         当前应该显示的是  1 [2] 3 4 5 
+      
+          按照上面算法 2(初始页) - 5(连续页) / 2 = 0  
+          
+          算出来是0 ,但是我们是没有第0页的,所以这种情况,我们还需要'修正'起始页的值
+          
+          思路
+          假如算出来是0,或者小于0,就让起始页的值为1
+       */
+
+      if (start < 1) {
+        //如果start的值小于1 (0以下)
+        start = 1; //就将start的值改为1(修正起始页最小为1)
+      }
+      //*********** 计算end(末尾页)
+      /* 
+         myCurrentPage, showPageNo, totalPages
+                4           5            8         当前应该显示的是  2 3 [4] 5 6
+        现在的算法应该是:
+        末尾页 = 起始页(4-2 = 2) + 5(连续页) - 1 == 6 (末尾页)  
+      */
+      //初步算法
+      end = start + showPageNo - 1; //2 + 5 - 1 == 6
+      /* 
+        问题:
+         myCurrentPage, showPageNo, totalPages
+              7             5          8        当前应该显示的是   4 5 6 [7] 8
+        按照之前的算法:
+        末尾页 = 起始页(7 - 2 = 5) + 5(连续页) - 1 == 9  但是现在末尾页最大是8 所以应该修正算法
+        当 > 8 的时候 = 8 
+        
+        又有新问题来了 start 的其实值现在有不对了 
+        新算法,根据连续页码来修正起始值 
+        末尾页(8) - 连续页(5) + 1 (就是说连续显示5页,就应该减去 4 ,因为45678   4==>8 只有4页)
+      */
+      if (end > totalPages) {
+        end = totalPages;
+        start = totalPages - showPageNo + 1;
+
+        /* 
+          新问题又来了:
+           myCurrentPage, showPageNo, totalPages
+              3              5            4           应该显示的是 1 2 [3] 4
+          末尾页 (3 + 5 - 1 ) > 4 修正为 4      
+          当末尾页 > totalPages的时候,修正为totalPages
+          那么就应该修正起始页
+          4(totalPages) - 5(showPageNo) + 1 = 0  //很明显 0 是不对的
+          所以还是要判断 如果起始页为0的话,修正起始页
+        */
+        if (start < 1) {
+          start = 1;
+        }
+      }
+      //返回起始页和末尾页
+      return { start, end };
+    }
+
+```
+
+## 根据props和data数据和computed进行动态显示
+*  `:disabled="xxx"`: 控制是否能操作,比如:当前在第一页不能点击上一页(最后一页同理),点击当前页不能点击
+*  `v-if="yyy"`: 控制是否显示,比如...的符号,当前必须起始页大于1,小于末尾页1 才可以显示
+*  `v-for="end"`: 遍历显示多个数值,遍历不仅能遍历数组,对象还能遍历number,这个时候和v-if进行配合,遍历优先级比对象高,遍历一个就进行判断,是不是符合要求
+
+## Detail组件静态路由组件
+* 定义静态组件
+* 注册路由规则
+* 通过编程式路由或者导航式路由都可以绑定路由跳转
+* 怎样让路由跳转之后,滚动条自动回到初始位置?
+     ```js
+    scrollBehavior (to, from, savedPosition) {
+        return { x: 0, y: 0 }  // 在跳转路由时, 滚动条自动滚动到x轴和y轴的起始位置
+    } 
+    ```
 ### [axios 详解 --> 好文章](https://juejin.im/entry/58b2532f2f301e006c0a2d80)
 ### [vuex 文章](https://juejin.im/entry/58cb4c36b123db00532076a2)
-
-
-
-
-
-
-
-
