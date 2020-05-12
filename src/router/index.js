@@ -65,4 +65,10 @@ export default new VueRouter({
     //配置对象
     mode: 'history', //不使用默认hash 模式,采用 history 模式
     routes, //配置所有路由
+    scrollBehavior(to, from, savedPosition) {
+        return {
+            x: 0,
+            y: 0
+        } // 在跳转路由时, 滚动条自动滚动到x轴和y轴的起始位置
+    }
 })

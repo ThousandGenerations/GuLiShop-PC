@@ -38,8 +38,8 @@ export default [{
         }
     },
     {
-        path: '/detail',
-        name: 'detail/:id',
+        name: 'detail',
+        path: '/detail/:skuId',
         component: Detail,
     },
 

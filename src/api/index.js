@@ -61,3 +61,16 @@ export const reqProductList = (searchParams) => ajax({
     method: 'POST', //类型
     data: searchParams //参数
 })
+
+//search组件请求 相关配置
+//根据商品的条件参数对象获取商品详情数据   
+//    /api/item/{skuId}
+export const reqProduct = (skuId) => ajax.get(`/item/${skuId}`)
+// reqProduct(6)
+
+
+/* 
+添加到购物车
+/api/cart/addToCart/{ skuId }/{ skuNum }
+*/
+export const reqAddToCart = (skuId, skuNum) => ajax.post(`/cart/addToCart/${skuId}/${skuNum}`)

@@ -749,145 +749,6 @@ updateOptions() {
 //在 search,通过实践总线对象分发事件
 this.$bus.$emit("removeKeyword");
 
-### search组件的动态展示
-* 定义api发送ajax请求  请求地址：/list
-```js
-//search组件请求 相关配置
-//根据搜索的条件参数对象获取商品列表数据   
-export const reqProductList = (searchParams) => ajax({
-url: '/list',    //请求地址url
-method: 'POST', //请求的类型
-data: searchParams //携带参数
-})
-```
-* 使用vuex模块化方式管理请求状态,定义state/mutations/actions/getter
-* 使用dispatch()获取数据以及扩展函数...mapState()获取状态数据
-* 搜索条件和参数
-```js
-data() {
-    return {
-      //定义所有 search 的请求参数的数据配置对象
-      options: {
-        category1Id: "", // 一级分类ID
-        category2Id: "", // 二级分类ID
-        category3Id: "", // 三级分类ID
-        categoryName: "", // 分类的名称
-        keyword: "", // 关键字keyword
-        trademark: "", // 品牌:格式    "ID:品牌名称"
-        props: [], // 商品属性的数组: ["属性ID:属性值:属性名"] 示例: ["2:6.0～6.24英寸:屏幕尺寸"]
-        order: "1:desc", // 排序方式  1: 综合,2: 价格 asc: 升序,desc: 降序  示例: "1:desc"
-        pageNo: 1, // 当前页码
-        pageSize: 10 // 每页数量
-      }
-    };
-  },    
-```
-* 根据共享组件TypeNav菜单按钮方式访问Search组件，或者keyword关键词进入搜索组件,或者直接访问search组件
-* 分类
-    * ==> query参数：category1Id/category2Id/category3Id/categoryName
-    * ==> params参数：keyword
-* 定义根据query和params参数来发送请求更新数据时候的方法
-```js
-updateOptions() {
-      //根据 query 和 params 参数更新options
-      const {
-        //利用解构赋值,将$route 里面的 query 参数的值结构出来
-        categoryName,
-        category1Id,
-        category2Id,
-        category3Id
-      } = this.$route.query;
-      //同样利用解构赋值,将$route 的关键字 params 参数解构出来
-      const { keyword } = this.$route.params;
-      //取到 params 和 query 的参数值之后,添加到 data 中定义的 options 对象里面
-      this.options = {
-        ...this.options, //扩展运算符,除了咱们要修改的属性,其他属性也一并添加进来 ,方便函数复用
-        category1Id,
-        category2Id,
-        category3Id,
-        categoryName,
-        keyword
-      };
-    },
-```
-* 在beformount()生命周期函数中创建初始化组件数据
-```js
-  //定义初始化异步更新 data 中的数据
-  beforeMount() {
-    this.updateOptions(); //调用定义的更新options数据的方法 
-  },
-```
-* 在mounted生命周期函数中定义异步更新时候的发送请求(本身访问search组件或者没有请求参数的情况下发送异步请求更新代码)
-```js
-  //定义初始异步更新的代码
-  mounted() {
-    //在初始化搜索组件的时候,异步更新
-    // console.log("1111");
-    this.$store.dispatch("getProductList", this.options);
-  },
-```
-### 相同路由跳转，路由组件对象不会重新创建
-* 问题：如果当前已经在Search组件中，在通过搜索按钮或者分类菜单按钮来跳转到search组件，应该重新获取数据，为什么没有？
-* 原因：当前在A组件，跳转到A组件的时候，路由组件对象是不会重新创建的,从而就不会执行初始化生命周期函数中的请求代码，所以数据不变，以为根本没有发送请求
-* 解决：这个时候就应该想到监视属性，监视路由对象$route的变化，同组件跳转的时候$route是重新产生，之后再根据所对应的query参数以及params参数更新options对象的数据就可以了
-```js
-  //只是这样定义了方法还是不够的,相同路由重复点击不更新数据，应该定义监视属性,监视到路由发生跳转时,参数发生变化的时候更新options的数据,还要更新页面重新请求数据
-  watch: {
-    //当路由跳转时只有路由传参数发生变化的时候
-    $route() {
-      this.updateOptions();
-      //请求数据,再次调用接口
-      this.$store.dispatch("getProductList", this.options);
-    }
-  },
-```
-### 根据分类和搜索关键词进行搜索
-* 删除分类和关键词的条件
-    * 给对应的数据显示的删除按钮绑定点击事件，定义方法
-    * 修改options对象中对应的数据为空串，就可以做到删除
-    * 但是这个地方必须重新发送请求获取最新数据
-* 问题1
-    * 问题：删除分类菜单的数据以及关键词的数据之后，为什么地址栏还是有数据显示？
-    * 原因: 删除条件的时候，并没有做更新query或者params参数的，也就是没有修改路由参数数据
-    * 解决：删除分类数据的时候，不再携带query参数，只携带之前的params的参数就可以，删除params是一个道理
-```js
-    //移除关键字
-    removeKeyword() {
-      //将配置对象关键字置为空
-      this.options.keyword = "";
-      //重新发送请求,获取最新数据
-      // this.$store.dispatch("getProductList", this.options);
-      //重置跳转到当前路由,不再携带 params 参数,只携带原来的 query 参数
-      this.$router.replace({ name: "search", query: this.$route.query });
-      //通知 header 组件也删除输入的关键字
-      //在 search,通过实践总线对象分发事件
-      this.$bus.$emit("removeKeyword");
-    },
-    
-    
-    removeCategory() {
-      //重置分类的条件数据
-      this.options.categoryName = ""; //将名字置为空
-      this.options.category1Id = ""; //将一级 id 置为空
-      this.options.category2Id = ""; //将二级 id 置为空
-      this.options.category3Id = ""; //将三级 id 置为空
-      //重新获取数据
-
-      // this.$store.dispatch("getProductList", this.options); //这样不行
-      //重新跳转到当前路由,不再携带 query 参数,只携带原本的 params 参数
-      this.$router.replace(this.$route.path); //$route.path 不带 query 参数,但是带有 params 参数(如果存在)
-    },
-```
-* 问题2
-    * 问题：删除关键字的时候，搜索框input没有同步更新，还是原来数据不变
-    * 原因：两个组件Header和Search之间没有建立联系，无法操作input框中的数据
-    * 解决：
-        * 定义全局事件总线，在vue的原型上（prototype）添加$bus对象
-        * Search组件分发事件，Header组件通过事件总线对象绑定事件来接收消息
-        * 这个时候两个组件之间就会建立联系，修改数据的时候就会更新数据
-```js
-//在 search,通过实践总线对象分发事件
-this.$bus.$emit("removeKeyword");
 
   mounted() {
     //在 header 组件,通过时间总线对象绑定事件监听来接收消息,然后更新数据
@@ -956,9 +817,7 @@ this.$bus.$emit("removeKeyword");
         * 通过Vue的实例对象vm中的$delete方法 `vm.$delete(target,key)`
         * 通过Vue构造函数中的delete方法添加:`Vue.delete(target,key)`
 ## search组件的排序功能
-<!--![image](4E86F74F1B8540128DD41A9F7FE441BC)-->
 * 首先查看api文档中排序请求返回的数据结构
-<!--//![image](E3CC5402E11F4D20878B2927BAEE5631)-->
 * 根据文档可知,数据结构为: 1:desc  2:asc
 ### 哪个排序项被选中?
 * 排序:
@@ -1151,5 +1010,62 @@ this.$bus.$emit("removeKeyword");
         return { x: 0, y: 0 }  // 在跳转路由时, 滚动条自动滚动到x轴和y轴的起始位置
     } 
     ```
+## 错误: "TypeError: Cannot read property 'category1Name' of undefined"
+* 说明: 不能在undefined上读取xxx属性
+* 原因: 三层属性直接读取,第一层对象/数组开始是空的{},但是在读取第二层属性就是undefined,在读取第三层属性就报错
+* 解决办法1:
+    * v-if判断,有值了在进行下一步,也就是说,当前没值的时候,不解析模板,等到有值的时候在解析
+        * v-show是不行的,他该解析模板还是会解析,因为v-show内部使用display:none完成的,只是不显示
+* 解决办法2:
+    * 利用vuex的getters计算属性,来处理返回的对象,使用...mapGetters扩展出来就可以了,在gettres计算属性当中,进行判断,如果有值就返回值,如果没有值就返回{}/[]
+## 放大镜组件
+* 通过vuex的dispatch获取到后台的图片,动态显示
+* 布局: 
+    * 左边: 
+     `<img>: 中图
+        event <div>: 用来绑定响应mousemove
+        mask <div>: 随着鼠标移动的遮罩   字的尺寸是div的1/4`
+    * 右边:
+        `<div>: 包含大图img, 与左侧尺寸一样
+        <img>: 大图, 尺寸是中图的4倍`
+* 事件处理:
+    * 什么事件: mousemove
+    * 给谁绑定: event <div>
+* 在事件回调函数中做什么?
+    * 移动mask div: 指定其left和top样式: 
+        * maskDiv.style.left = left + px
+        * maskDiv.style.top = top + px
+    * 移动大图 img: 指定其left和top样式: 
+        * `bigImg.style.left = -2*top + px`
+        * `bigImg.style.top = -2*top + px`
+    * 计算最新的left值和top值
+        * 依赖数据: 事件坐标offsetX和offsetY, mask的宽度maskWidth
+        * 算法: 
+            `left = offsetX - maskWidth/2`
+            `top = offsetY - maskWidth/2`
+        * 限制left和top值只能在[0, maskWidth/2]
+
+## 在组件中分发异步action之后, 如果知道是成功了还是失败了从而做相应处理?
+* 实现方式1: 利用回调函数数据
+    * component: dispatch('addToCart', {callback: this.callback}) // 携带回调函数数据
+    * action: 请求成功或失败后, 调用callback(errorMsg值) // 向组件传递需要显示的errorMsg
+    * component: 在callback中, 根据errorMsg参数是否有值来做相应处理
+
+    * 实现方式2: 利用dispatch()的promise返回值
+        * 前置知识:
+            * async函数执行的返回值是一个promise, 且promise的结果由函数体的结果决定
+            * 执行dispatch()返回值为promise对象, 它就是async函数返回的promise
+        
+            * component: dispatch('addToCart', {}) // 不用携带回调函数数据
+    * 方式1:
+        * action: 
+            * 请求操作成功: 返回''
+            * 请求操作失败: 返回errorMsg
+            * component: 通过dispatch()返回的promise的成功value值来判断成功还是失败了
+    * 方式2:
+        * action: 
+            * 请求操作成功: 返回''
+            * 请求操作失败: throw new Error(errorMsg值)
+            * component: 通过dispatch()返回的promise是成功的还是失败来判断操作是成功的还是失败
 ### [axios 详解 --> 好文章](https://juejin.im/entry/58b2532f2f301e006c0a2d80)
 ### [vuex 文章](https://juejin.im/entry/58cb4c36b123db00532076a2)
