@@ -115,7 +115,7 @@ export default {
       if (this.currentIndex === -2) return;
       //更新需要显示的分类下标
       this.currentIndex = index;
-      console.log(this.currentIndex);
+      // console.log(this.currentIndex);
     }, 100),
 
     //点击分类项的时候,跳转到搜索页面,并且传参数
@@ -173,8 +173,13 @@ export default {
           location.params = { keyword }; //解构赋值写法 相当于 keyword:keyword
         }
 
-        //跳转到 search
-        this.$router.push(location); //传入之前定义的 location 对象就可以(包含地址和参数)
+        // 跳转到search
+        // 如果当前在Search, 使用replace(), 否则使用push
+        if (this.$route.name === "search") {
+          this.$router.replace(location);
+        } else {
+          this.$router.push(location);
+        }
 
         //跳转之后隐藏以及列表 正好调用之前定义的方法 hideCategorys
         this.hideCategorys();

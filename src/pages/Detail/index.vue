@@ -368,7 +368,19 @@ export default {
 
       try {
         await this.$store.dispatch("addToCart3", { skuId, skuNum });
-        alert("成功");
+        // alert("成功");
+
+        //向successStorage 中保存skuinfo
+        window.localStorage.setItem(
+          "SKU_INFO_KEY",
+          JSON.stringify(this.skuInfo)
+        );
+
+        //跳转到添加成功的界面
+        this.$router.push({
+          path: "/addcartsuccess",
+          query: { skuNum }
+        });
       } catch (error) {
         alert(error.message);
       }

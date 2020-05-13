@@ -28,65 +28,65 @@ const actions = {
         }
     },
 
-    //添加到商品到购物车的异步action
-    async addToCart({
-        commit
-    }, {
-        skuId,
-        skuNum,
-        callback
-    }) {
-        const result = await reqAddToCart(skuId, skuNum)
-        if (result.code === 200) { //成功
-            // const detailInfo = result.data
-            console.log('添加到购物车成功')
-            callback()
-            // commit('RECEIVE_DETAIL_INFO', detailInfo)
-        } else {
-            console.log('失败')
-            callback('失败') //失败了就要传递错误信息
-        }
-    },
-    async addToCart2({
-        commit
-    }, {
-        skuId,
-        skuNum,
-        callback
-    }) {
-        const result = await reqAddToCart(skuId, skuNum)
-        if (result.code === 200) { //成功
-            // const detailInfo = result.data
-            // console.log('添加到购物车成功')
-            // callback()
-            return ''
-            // commit('RECEIVE_DETAIL_INFO', detailInfo)
-        } else {
-            // console.log('失败')
-            // callback('失败') //失败了就要传递错误信息
-            return '添加到购物车失败'
-        }
-    },
-    async addToCart3({
-        commit
-    }, {
-        skuId,
-        skuNum,
-    }) {
-        const result = await reqAddToCart(skuId, skuNum)
-        if (result.code === 200) { //成功
-            // const detailInfo = result.data
-            // console.log('添加到购物车成功')
-            // callback()
-            // return ''
-            // commit('RECEIVE_DETAIL_INFO', detailInfo)
-        } else {
-            // console.log('失败')
-            // callback('失败') //失败了就要传递错误信息
-            // return '添加到购物车失败'
-            throw new Error('失败')
-        }
-    }
+    //添加到商品到购物车的异步action (已经移到购物车状态中)
+    // async addToCart({
+    //     commit
+    // }, {
+    //     skuId,
+    //     skuNum,
+    //     callback
+    // }) {
+    //     const result = await reqAddToCart(skuId, skuNum)
+    //     if (result.code === 200) { //成功
+    //         // const detailInfo = result.data
+    //         console.log('添加到购物车成功')
+    //         callback()
+    //         // commit('RECEIVE_DETAIL_INFO', detailInfo)
+    //     } else {
+    //         console.log('失败')
+    //         callback('失败') //失败了就要传递错误信息
+    //     }
+    // },
+    // async addToCart2({
+    //     commit
+    // }, {
+    //     skuId,
+    //     skuNum,
+    //     callback
+    // }) {
+    //     const result = await reqAddToCart(skuId, skuNum)
+    //     if (result.code === 200) { //成功
+    //         // const detailInfo = result.data
+    //         // console.log('添加到购物车成功')
+    //         // callback()
+    //         return ''
+    //         // commit('RECEIVE_DETAIL_INFO', detailInfo)
+    //     } else {
+    //         // console.log('失败')
+    //         // callback('失败') //失败了就要传递错误信息
+    //         return '添加到购物车失败'
+    //     }
+    // },
+    // async addToCart3({
+    //     commit
+    // }, {
+    //     skuId,
+    //     skuNum,
+    // }) {
+    //     const result = await reqAddToCart(skuId, skuNum)
+    //     if (result.code === 200) { //成功
+    //         // const detailInfo = result.data
+    //         // console.log('添加到购物车成功')
+    //         // callback()
+    //         // return ''
+    //         // commit('RECEIVE_DETAIL_INFO', detailInfo)
+    //     } else {
+    //         // console.log('失败')
+    //         // callback('失败') //失败了就要传递错误信息
+    //         // return '添加到购物车失败'
+    //         throw new Error('失败')
+    //     }
+    // }
 }
 const getters = {
     //包含3级分类名称数据的对象

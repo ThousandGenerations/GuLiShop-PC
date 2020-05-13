@@ -14,6 +14,7 @@ import axios from 'axios'
 import NProgress from 'nprogress'
 //引入 nprogress的 css
 import 'nprogress/nprogress.css'
+import store from '@/store'
 
 //配置不显示右上角小圆圈,只显示进度条
 NProgress.configure({
@@ -32,6 +33,8 @@ instance.interceptors.request.use(config => {
     // console.log('请求拦截器执行了')
     // 2. 显示进度条
     NProgress.start();
+    /*  5. 每次请求都携带一个userTempId请求头, 数据值在state中 */
+    config.headers.userTempId = store.state.user.userTempId
     return config //拦截之后再将数据发送给服务器
 })
 
