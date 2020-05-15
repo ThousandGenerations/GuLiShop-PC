@@ -17,9 +17,9 @@ import 'nprogress/nprogress.css'
 import store from '@/store'
 
 //配置不显示右上角小圆圈,只显示进度条
-NProgress.configure({
-    showSpinner: false,
-});
+// NProgress.configure({
+//     showSpinner: true,
+// });
 // 1. 配置通用的基础路径和超时
 //创建一个新的 axios实例,功能和 axios 类似(可以作为函数或者对象发送请求)
 const instance = axios.create({
@@ -35,6 +35,12 @@ instance.interceptors.request.use(config => {
     NProgress.start();
     /*  5. 每次请求都携带一个userTempId请求头, 数据值在state中 */
     config.headers.userTempId = store.state.user.userTempId
+
+    /* 6. 每次请求(已登陆)都携带一个token请求头, 数据值在state中 */
+    const token = store.state.user.userInfo.token
+    if (token) {
+        config.headers['token'] = token
+    }
     return config //拦截之后再将数据发送给服务器
 })
 

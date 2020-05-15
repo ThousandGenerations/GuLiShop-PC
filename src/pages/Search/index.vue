@@ -69,7 +69,7 @@
           <div class="goods-list">
             <ul class="yui3-g">
               <!-- 遍历数据从后台获取 goodList -->
-              <li class="yui3-u-1-5" v-for="goods in productList.goodsList" :key="goods.id">
+              <li class="yui3-u-1-5" v-for="(goods,index) in productList.goodsList" :key="goods.id">
                 <div class="list-wrap">
                   <div class="p-img">
                     <router-link :to="`/detail/${goods.id}`">
@@ -95,9 +95,8 @@
                   </div>
                   <div class="operate">
                     <a
-                      href="success-cart.html"
-                      target="_blank"
                       class="sui-btn btn-bordered btn-danger"
+                      @click.prevent="addToCart(index)"
                     >加入购物车</a>
                     <a href="javascript:void(0);" class="sui-btn btn-bordered">收藏</a>
                   </div>
@@ -128,8 +127,9 @@
 </template>
 
 <script>
-import { mapState } from "vuex"; //引入mapState
+import { mapState, mapGetters } from "vuex"; //引入mapState
 import SearchSelector from "./SearchSelector/SearchSelector";
+import { reqAddToCart } from "@/api";
 //引入详情组件
 import Detail from "@/pages/Detail";
 export default {
@@ -196,7 +196,8 @@ export default {
         props: [], // 商品属性的数组: ["属性ID:属性值:属性名"] 示例: ["2:6.0～6.24英寸:屏幕尺寸"]
         order: "1:asc", // 排序方式  1: 综合,2: 价格 asc: 升序,desc: 降序  示例: "1:desc"
         pageNo: 1, // 当前页码
-        pageSize: 10 // 每页数量
+        pageSize: 10, // 每页数量
+        skuNum: "1"
       }
     };
   },
@@ -213,6 +214,23 @@ export default {
 
   //定义一个方法来管理,当query 和 params 发生改变的时候更新 options 里面对应的数据
   methods: {
+    //加入购物车
+    addToCart(index) {
+      // console.log(index);
+      const { goodsList } = this.productList;
+      let skuId = goodsList[index].id;
+      const skuNum = this.options.skuNum;
+      reqAddToCart(skuId, skuNum);
+      console.log(skuNum, skuId);
+      //向successStorage 中保存skuinfo
+      // window.localStorage.setItem("SKU_INFO_KEY", JSON.stringify(this.skuInfo));
+
+      //跳转到添加成功的界面
+      this.$router.push({
+        path: "/addcartsuccess",
+        query: { skuNum: skuNum }
+      });
+    },
     //定义编程式路由跳转到详情
     toDetail() {
       this.$router.push(`/detail${this.goods.id}`);

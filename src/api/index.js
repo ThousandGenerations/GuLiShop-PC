@@ -28,25 +28,6 @@ import mockAjax from './mockAjax'
 export const reqBaseCategoryList = () => ajax.get('/product/getBaseCategoryList')
 
 
-/* 
-    获取请求登录的数据
-    url:  /api/user/passport/login
-    POST 请求
-*/
-// POST 请求传参数传入形参
-export function reqLogin(mobile, password) {
-    //返回配置对象形式
-    return ajax({
-        method: 'POST', //请求方式 POST
-        url: '/user/passport/login', // url 请求地址
-        data: { //请求携带的参数
-            mobile,
-            password,
-        }
-    })
-    // 函数形式               //url                //参数(对象简写)
-    // return ajax.post('/user/passport/login'.{mobile,password})
-}
 
 //轮播和楼层的请求函数
 
@@ -94,3 +75,44 @@ export const reqDeleteCartItem = (skuId) => ajax.delete(`/cart/deleteCart/${skuI
   url: `/cart/deleteCart/${skuId}`,
   method: 'DELETE'
 }) */
+
+
+/* 
+请求注册
+/api/user/passport/register  POST
+*/
+// export const reqRegister = ({mobile, password, code}) => ajax.post('/user/passport/register', {mobile, password, code})
+export const reqRegister = (userInfo) => ajax.post('/user/passport/register', userInfo)
+
+
+/* 
+请求登陆
+/api/user/passport/login
+POST
+*/
+export function reqLogin(mobile, password) {
+    return ajax({
+        method: 'POST',
+        url: '/user/passport/login',
+        data: {
+            mobile,
+            password
+        }
+    })
+}
+
+/* 
+退出登陆
+/api/user/passport/logout
+*/
+export const reqLogout = () => ajax('/user/passport/logout')
+// reqLogout()
+
+
+/* 
+获取我的订单列表
+/api/order/auth/{page}/{limit}  GET
+*/
+export const reqMyOrders = (page, limit) => ajax(`/order/auth/${page}/${limit}`)
+
+// reqMyOrders(1, 3)

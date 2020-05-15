@@ -8,6 +8,12 @@ import Login from '@/pages/Login'
 import Detail from '@/pages/Detail'
 import AddCartSuccess from '@/pages/AddCartSuccess'
 import ShopCart from '@/pages/ShopCart'
+import Trade from '@/pages/Trade'
+import Pay from '@/pages/Pay'
+import PaySuccess from '@/pages/PaySuccess'
+import Center from '@/pages/Center'
+import MyOrder from '@/pages/Center/MyOrder'
+import GroupBuy from '@/pages/Center/GroupBuy'
 export default [{
         path: '/', //url 地址
         component: Home //路由所在文件,因为文件名是 index,所以可以不写,默认就是找 index
@@ -36,6 +42,18 @@ export default [{
     { //加入购物车组件相关路由
         path: '/addcartsuccess',
         component: AddCartSuccess,
+        //全局路由守卫
+        beforeEnter: (to, from, next) => {
+            //得到当前路由的标识名称
+            //得到要跳转到目的路由的query参数
+            const skuNum = to.query.skuNum
+            //只有都存在,才放行
+            if (skuNum && JSON.parse(localStorage.getItem('SKU_INFO_KEY'))) {
+                next()
+            } else { //在组件对象创建前强制跳转到首页
+                next('/')
+            }
+        }
     },
     { //商品详情页相关路由
         name: 'detail',
@@ -44,7 +62,14 @@ export default [{
     },
     { //购物车相关路由
         path: '/shopcart',
-        component: ShopCart
+        component: ShopCart,
+        beforeEnter: (to, from, next) => {
+            if (localStorage.getItem('SKU_INFO_KEY')) {
+                next()
+            } else {
+                next('/')
+            }
+        }
     },
     { //登录组件
         path: '/login',
@@ -53,6 +78,64 @@ export default [{
             isHideFooter: true
         }
     },
+    {
+        //结算组件相关路由
+        path: '/trade',
+        component: Trade,
+        //只能从购物车界面才能跳转到交易界面
+        beforeEnter: (to, from, next) => {
+            if (from.path === '/shopcart') {
+                next()
+            } else {
+                next('/shopcart')
+            }
+        }
+    },
+    {
+        //支付相关路由
+        path: '/pay',
+        component: Pay,
+        //只能从交易界面,才能跳转到支付界面
+        beforeEnter: (to, from, next) => {
+            if (from.path === '/trade') {
+                next()
+            } else {
+                next('/trade')
+            }
+        }
+    },
+    {
+        path: '/paysuccess',
+        component: PaySuccess,
+        //只有从支付界面,才能跳转到支付成功的界面
+        beforeEnter: (to, from, next) => {
+            if (from.path === '/pay') {
+                next()
+            } else {
+                next('/pay')
+            }
+        }
+    },
+    {
+        path: '/center',
+        component: Center,
+        //二级路由
+        children: [{
+                path: 'myorder',
+                component: MyOrder
+            }, {
+                path: 'groupbuy',
+                component: GroupBuy,
+            },
+
+            {
+                path: '',
+                redirect: 'myorder'
+            }
+        ]
+
+
+    }
 
 
 ]

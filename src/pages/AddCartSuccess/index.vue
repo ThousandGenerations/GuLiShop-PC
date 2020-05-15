@@ -36,7 +36,7 @@ export default {
   },
   //同步更新data数据
   beforeMount() {
-    //从localStorage 取出数据
+    //从localStorage 取出数据同步到data中进行展示
     this.skuInfo = JSON.parse(window.localStorage.getItem("SKU_INFO_KEY"));
   }
 };

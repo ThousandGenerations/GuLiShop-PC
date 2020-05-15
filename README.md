@@ -1,6 +1,6 @@
 
 # 谷粒商城PC项目笔记
-
+[20200516笔记](http://note.youdao.com/noteshare?id=dda518f74ef97af98494e2e9e3c8ec7a&sub=WEB1779d60d8c17be1469af105199ce0c14)
 ## 路由跳转以及传参的几个问题汇总
 测试
 * 路由组件

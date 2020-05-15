@@ -15,6 +15,11 @@ import Carousel from '@/components/Carousel'
 import Pagination from '@/components/Pagination'
 //引入 mock 模块 加载一次就能使用接口
 import './mock/mockSever'
+//加载已经定义的表单验证文件
+import './validate'
+//引入所有接口请求并包装在API对象中
+import * as API from '@/api'
+Vue.prototype.$API = API
 
 Vue.config.productionTip = false //去掉不是生产环境的提示
 // 注册 swiper 插件

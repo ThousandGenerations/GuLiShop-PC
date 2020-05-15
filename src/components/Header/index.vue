@@ -5,14 +5,20 @@
       <div class="container">
         <div class="loginList">
           <p>尚品汇欢迎您！</p>
-          <p>
+          <p v-if="userInfo.name">
+            <span>{{userInfo.nickName}}</span>
+            &nbsp;&nbsp;&nbsp;
+            <a href="javascript:" @click="logOut">登出</a>
+          </p>
+
+          <p v-else>
             <span>请</span>
             <router-link to="/login">登录</router-link>
             <router-link to="/register" class="register">免费注册</router-link>
           </p>
         </div>
         <div class="typeList">
-          <a href="###">我的订单</a>
+          <router-link to="/center/myorder">我的订单</router-link>
           <router-link to="/shopcart">我的购物车</router-link>
           <a href="###">我的尚品汇</a>
           <a href="###">尚品汇会员</a>
@@ -47,6 +53,8 @@
 </template>
 
 <script>
+import { mapState } from "vuex";
+
 export default {
   name: "Header",
 
@@ -55,6 +63,11 @@ export default {
       keyword: ""
     };
   },
+  computed: {
+    ...mapState({
+      userInfo: state => state.user.userInfo
+    })
+  },
   mounted() {
     //在 header 组件,通过时间总线对象绑定事件监听来接收消息,然后更新数据
     this.$bus.$on("removeKeyword", () => {
@@ -62,6 +75,10 @@ export default {
     });
   },
   methods: {
+    logOut() {
+      this.$store.dispatch("logOut");
+      // this.userInfo.name = "";
+    },
     search() {
       //编程式路由导航
       //字符串传递参数的形式
