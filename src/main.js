@@ -19,6 +19,7 @@ import './mock/mockSever'
 import './validate'
 //引入所有接口请求并包装在API对象中
 import * as API from '@/api'
+import './elements'
 Vue.prototype.$API = API
 
 Vue.config.productionTip = false //去掉不是生产环境的提示
