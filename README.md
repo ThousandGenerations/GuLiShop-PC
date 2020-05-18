@@ -1,3 +1,637 @@
+# 组件间通信
+# 组件
+
+1. 组件是 Vue.js 强大的功能之一，组件就是具有特定功能效果的集合体，和模块化类似
+2. 现在存在的问题就是组件实例的作用域之间是相互独立的，这就意味着组件之间无法直接相互引用，一般来说组件间大概有图中的关系
+  
+![组件间通信](http://assets.processon.com/chart_image/5ead6131e0b34d05e1bdf27a.png)
+
+3. 从图中可以看出来（一般来说组件间只讨论祖先、兄弟、父子关系）
+* App 作为根组件分别和 A 组件和 B 组件是父子关系
+* A 组件和 B 组件之间又是兄弟关系
+* A 组件和 C 组件又是父子关系
+* App 根组件和 C 组件又是祖先后代的关系
+4. 针对不同的场景，有很多组件间通信的方式以及用法
+
+## 1. props
+* Vue 中最基本的组件间通信方式，props 是父子组件通信中父组件传值给子组件的一种方式。
+    * 它通过标签属性的方式传递数据
+    * 子组件只应该进行读取值使用，不应该直接去修改值(不是不能,是不应该)
+* 父组件中定义 data 数据
+```js
+    data(){
+        return{
+            comment:[{},{}],
+        }
+    }
+```
+* 父组件给子组件指定标签属性
+```html
+<CommentList :comments="comments" />
+```
+* 子组件此时要声明接收标签属性（声明接收之后，子组件的实例对象就直接用有了这个属性）。
+* 子组件接收方式:
+```js
+//数组形式
+props:['props1','props2'];
+
+//对象形式1
+props:{
+    props1:Array,
+    props2:Function
+}
+
+//对象形式 2
+props: {
+        prop1: {
+          type: Number,  // 类型是Number
+          default: 0, // 默认值为 0
+          required: true, // 必须要传的属性（必要的）
+          validator: function (value) { // 校验函数
+            return value >= 0 // 值必须大于0
+          }
+        }
+      }
+```
+
+    * 一般来说使用第二种方式声明接收,第二种方式即简洁,又比第一种方式更加能说明数据的类型,方便操作
+* 组件中关于数据的重要问题
+    * 数据定义在哪个组件？  
+        * 1. 如果数据只有一个组件使用，就定义在这个组件当中
+        * 2. 如果数据有多个组件使用，就定义在多个组件的公共父组件中
+    * 更新数据的方法定义在那里？
+        * 数据源在那里，更新数据的方法就定义在哪里 
+* 父组件给子组件传递数据
+    * 函数：
+        * 子组件调用函数修改父组件的数据（子组件传递数据给父组件  子-->父）
+    * 非函数：
+        * 父组件传递数据子组件直接使用（父组件传递数据给子组件 父-->子）
+        * 需要注意的是：子组件只使用数据不要直接修改数据，应该通过调用父组件的方法来修改
+
+
+## 2. $emit
+* $emit:通常用作父子组件通信,配合一个事件名使用来分发一个自定义的事件
+```
+// 父组件
+<template>
+    <button-component @clickButton="clickButton"></button-component>
+    // 在父组件利用 v-on 监听
+</template>
+<script>
+export default {
+    methods: {
+      clickButton () { ··· }
+    }
+}
+</script>
+
+// 子组件
+<template>
+    <button @click="handleClick"></button>
+</template>
+<script>
+export default {
+    methods: {
+      handleClick () { // 触发 $emit
+        this.$emit('clickButton');
+      }
+    },
+    mounted() {
+        this.$on('clickButton', (...arr) => { // 也可以自己监听 $emit，虽然没什么用···
+            console.log(...arr);
+        })
+    }
+}
+</script>
+```
+## 3. v-model
+* v-model双向数据绑定回顾
+
+```html
+    <input type="text" v-model="msg" />
+    <!-- v-model -->
+    <!-- v-model 回顾 -->
+    <p>{{msg}}</p>
+    <br />
+    <!-- v-m
+```
+```js
+data() {
+    return {
+      msg: "v-model",
+    };
+  }
+```
+
+* 通过v-model 实现双向数据绑定，其本质上就是通过获取到 input 的 value 值，之后再绑定 input 事件，将 input 的 value 值赋值给定义的变量，这样就实现了 input 输入框的值改变，接着就会改变这个变量的值
+```html
+<!-- v-model 本质 -->
+    <!-- 实际上是使用 :value="msg" 和 绑定 input 事件 取出 input 的值赋值给 msg 来实现-->
+    <input type="text" :value="msg2" @input="msg2=$event.target.value" />
+    <p>{{msg2}}</p>
+```
+```js
+data() {
+    return {
+      msg2: "v-model 本质"
+    };
+  }
+```
+
+* 上面两种方式所达到的效果都是一样的 
+* v-model 不仅能实现数据的双向数据绑定还能实现组件与组件之间的双向绑定（传值），能够实现父子组件之间相互通信
+* 在组件标签上使用 v-model 
+```html
+<!-- 在组件标签上使用的本质 -->
+<!-- 父组件 -->
+    <p>{{msg3}}</p>
+    <ModelChild v-model="msg3" />
+    <!-- 组件上的 v-model 等同于下面的写法 -->
+    <ModelChild :value="msg3" @input="msg3 = $event" />
+    
+<!-- 子组件 -->
+<div>
+    <input type="text" :value="value" @input="$emit('input',$event.target.value)" />
+    <!-- 首先是绑定了 input 事件监听 之后又使用$emit 分发事件,就会执行里面的代码 绑定自定义事件监听,取出 input 数据,传给父组件对应的事件 -->
+    <p>{{value}}</p>
+  </div>
+```
+```js
+//父组件
+data() {
+    return {
+      msg3: "xiaofeizhang"
+    };
+  }
+//子组件
+props: ["value"]
+  // 子组件内部接收父组件传入的绑定在 input 上面的value  通过 props 声明接收 然后子组件的实例对象就直接拥有了 msg(value) 这个值
+};
+```
+
+# 4. 属性修饰符 .sync
+.sync属性修饰符与 v-model 类似，可以实现组件间的相互通信，更准确的说法是双向数据同步
+* 首先是在父组件有数据，想在子组件中展示，可以使用标签中传递属性的方式传递数据
+* 不使用 sync
+```html
+<!--父组件-->
+<!--不使用 sync -->
+<h2>Sync</h2>
+    <p>小明爸爸现在有 {{money}}</p>
+    <h2>不使用 sync</h2>
+    <!--通过属性的方式向子组件传递money数据-->
+    <!--在这里父组件绑定自定义事件，将子组件传过来的值再赋值给（修改）money 就形成了双向数据传递-->
+    <SyncChild :money="money" @update:money="money = $event" />
+```
+```js
+//父组件
+data() {
+    return {
+      money: "10000"
+    };
+  }
+```
+```html
+<!--子组件-->
+ <div>
+    <span>小明每次花 100</span>
+    <!--绑定点击事件，通过$emit事件分发,触发自定义事件，将父组件传来的数据减去 100-->
+    <button @click="$emit('update:money',money-100)">花钱</button>
+    <span>爸爸还剩{{money}}</span>
+  </div>
+  
+```
+```js
+//子组件通过 props 来接收数据 之后通过给 botton 绑定点击事件，通过$emit事件分发,触发自定义事件，将父组件传来的数据减去 100
+  props: {
+    money: String
+  }
+  ```
+  * 使用 sync
+  
+  ```html
+  <!--父组件-->
+  <h2>使用 sync</h2>
+  <!--同样经过标签属性传递数据-->
+  <!--唯一不同点就是这边子组件没有绑定自定义事件来触发子组件传过来的数据 而是通过属性修饰符 sync 完成同步数据 实际上就是简化代码 和上面本质上没有区别 内部也是使用绑定自定义事件来实现的-->
+    <SyncChild :money.sync="money" />
+  
+  ```
+ ```js
+  //父组件
+data() {
+    return {
+      money: "10000"
+    };
+  }
+```
+```html
+<!--子组件-->
+ <div>
+    <span>小明每次花 100</span>
+    <!--绑定点击事件，通过$emit事件分发,触发自定义事件，将父组件传来的数据减去 100-->
+    <button @click="$emit('update:money',money-100)">花钱</button>
+    <span>爸爸还剩{{money}}</span>
+  </div>
+  
+```
+```js
+//子组件通过 props 来接收数据 之后通过给 botton 绑定点击事件，通过$emit事件分发,触发自定义事件，将父组件传来的数据减去 100
+  props: {
+    money: String
+  }
+  ```
+  * 总结： 实际上内部就是使用绑定自定义事件，先将父组件中的数据通过标签属性的方式传递给子组件，然后子组件再通过 props的方式 接收，在子组件中就能使用，当子组件修改这个值的时候，将修改后的值通过自定义事件$emit 分发事件的方式修改父组件中的对应的值来完成的操作。这样就可以实现父子组件之间的相互通信，同步数据的目的
+
+# 5.$attrs和$listeners
+* 利用$attrs和$listeners以及v-bind和 v-on 的特别使用方法实现组件和后代组件的通信
+```html
+<!--父组件-->
+<div>
+    <h2>自定义带 hover 的提示按钮</h2>
+    <!-- <a href="javascript:;" title="添加">
+      <el-button type="primary" size="mini" icon="el-icon-plus" @click="test"></el-button>
+    </a>-->
+    <LinkButton type="primary" size="mini" icon="el-icon-plus" title="添加" @click="test" />
+    <LinkButton type="info" size="mini" icon="el-icon-edit" title="更新" @click="update" />
+    <LinkButton type="danger" size="mini" icon="el-icon-delete" title="删除" @click="remove" />
+  </div>
+```
+```js
+//父组件
+import LinkButton from "./LinkButton";
+export default {
+  methods: {
+    test() {
+      alert("添加");
+    }
+  },
+  components: {
+    LinkButton
+  }
+};
+```
+
+```html
+<!--子组件-->
+<template>
+  <a href="javascript:;" :title="title ">
+  <!--后代组件-->
+    <el-button v-bind="$attrs" v-on="$listeners"></el-button>
+    <!--v-bind 和 v-on 特殊（对象）用法 来接收父组件向子组件传递的不确定的多个属性和事件-->
+  </a>
+</template>
+```
+```js
+//子组件
+export default {
+  props: ["title"] //props 接收确定的属性 title
+};
+```
+*   将父组件中的数据传递到子组件,确定的属性,比如说 title 通过 props 声明接收,
+    不确定的属性通过$attrs 接收
+
+
+    $attrs 可以接受包含属性数据的对象
+    $listeners 可以接收所有的方法的对象
+    v-bind="$attrs" :将父组件传递给我的一些动态属性,在传递给我的子组件 el
+    v-on="$listeners" :将父组件绑定给我的事件监听,我再绑定给我的子组件
+
+    实现了组件和后代组件之间的通信,使用的就是传递属性以及传递事件的方式 先由子组件接收 在由子组件传递给子组件的子组件 
+
+    记住一点就是确定的属性要用 props 来接收 不确定的属性就要用$attrs 来就收 他可以接收所有属性
+
+    总结:
+    $attrs: 排除 props 声明,所有组件标签属性组成的对象
+    $listeners : 组件标签绑定的所有事件组成的对象
+    v-bind的特别使用 : v-bind="{id:xxx}"  //传递的是对象 正好对应$attrs 的所有属性的对象
+    v-on的特别使用: v-on="{click:xxx}"  
+
+    使用这四个语法的特性去封装了一个比较通用的带 hover 文本提示的按钮  封装可复用的组件
+    
+# 5.$children和$parent
+
+* $children:所有直接子组件对象的数组（不考虑顺序）
+* $parent：父组件对象
+* $refs:包含所有有 ref 属性的标签对象或组件对象的容器对象
+
+```html
+<!--父组件html 部分-->
+<template>
+  <div>
+    <h2>$children和$parent</h2>
+    <p>他爸现在有{{money}}元</p>
+    <button @click="jieqian">找小明借 100</button>
+    <button @click="jieqian1">找小红借 200</button>
+    <button @click="jieqian3">分别借 200</button>
+    <!-- ref属性来实现 -->
+    <XiaoMing ref="xiaoming" />
+    <XiaoHong ref="xiaohong" />
+    <XiaoHong ref="xiaohong" />
+    <XiaoHong ref="xiaohong" />
+  </div>
+</template>
+```
+```js
+//父组件js 部分
+<script>
+import XiaoMing from "./XiaoMing";
+import XiaoHong from "./XiaoHong";
+export default {
+  components: {
+    XiaoMing,
+    XiaoHong
+  },
+  data() {
+    return {
+      money: 1000
+    };
+  },
+  methods: {
+    //找小明借钱 100
+    jieqian() {
+      //直接操作子组件的 data 数据 ,也可以在子组件定义方法
+      //   this.$refs.xiaoming.money -= 100; //在子组件上声明 ref 属性,之后就可以通过$refs 获取组件的实例对象,实例对象上就有 money 属性,因为子组件的 money 这个属性是定义在 data 身上的,之后减去 100 就行了
+      this.$refs.xiaoming.pullmoney(100); //得到子组件对象后调用方法操作(更新)子组件数据
+      //   找小红借钱类似
+      this.money += 100; //父组件身上在加上 100
+    },
+    //找小红借钱 200
+    jieqian1() {
+      //   this.$refs.xiaohong.money -= 200;
+      this.$refs.xiaohong.pullmoney(200);
+      this.money += 200;
+    },
+    jieqian3() {
+      //找所有孩子借钱,当然调用上面的方法也是可以实现的,但是这样操作明显不够动态,所以我们要用到$children
+      //通过$children的当时得到所有的子组件,是一个数组(无顺序),通过遍历这个数组,让每个组件实例对象调用 pullmoney 实例对象来让每个子组件的钱减少
+      this.$children.forEach(child => {
+        child.pullmoney(200);
+        this.money += 200;
+      });
+    }
+  }
+};
+</script>
+```
+
+```html
+<!--子组件（小明）html-->
+<template>
+  <div>
+    <hr />
+    <p>小明现在有 {{money}}</p>
+
+    <!-- 借钱给他爸 -->
+    <button @click="pushmoney(100)">给他爸 100</button>
+  </div>
+</template>
+```
+```js
+//子组件小明 js 部分
+data() {
+    return {
+      money: 20000
+    };
+  },
+  methods: {
+    pullmoney(count) {
+      this.money -= count;
+    },
+    pushmoney(count) {
+      this.money -= count; //点击借钱的时候,减少自己的钱
+      this.$parent.money += count; //同时他老爸也就是父组件的钱要加上自己减去的钱,   小红同理
+    }
+  }
+```
+
+```html
+<!--子组件小红部分-->
+<div>
+    <hr />
+    <p>小红现在有{{money}}</p>
+    <button @click="pushmoney(200)">给他爸 200</button>
+</div>
+```
+```js
+//子组件小红 js 部分
+data() {
+    return {
+      money: 10000
+    };
+  },
+  methods: {
+    pullmoney(count) {
+      this.money -= count;
+    },
+    pushmoney(count) {
+      this.money -= count; //点击借钱的时候,减少自己的钱
+      //通过$parent找到父组件对象,更新 父组件中的数据
+      this.$parent.money += count; //同时他老爸也就是父组件的钱要加上自己减去的钱,   小红同理
+    }
+  }
+```
+
+* 总结：
+    * $refs方法在子组件上声明 ref 属性之后。通过$refs 方法可以获取子组件实例对象的数据，之后可以操作更新子组件的数据，适用于操作单个组件的数据，对于多个子组件同时操作就得都定义一遍 ref 属性
+    * $children方法可以获取所有直接子组件实例对象的数据，同时操作所有直接子组件
+    * $parent方法可以找到父组件（不是祖先组件，要是祖先组件还得再加 parent,也就是父组件的父组件），来获取父组件上的数据进行操作（更新）
+    * 利用$children和$parent能方便的得到子组件、后代组件、父组件、祖先组件对象，从而更新其 data或者调用他的方法
+    * 但是官方不建议大量使用，要优先使用 props 和 event
+
+# 6.mixin(混合)
+* mixin是分发组件可复用功能的一种很灵活的方式。每个mixin 对象可以包含全部组件选项。当组件使用 mixin 对象的时候，mixin 对象中的全部选项，都会被混入组件当中去使用。
+* 首先需要定义一个mixins配置文件的配置对象并且向外暴露
+```js
+/* 
+包含项目中n个组件复用的js 配置
+*/
+//向外暴露这个 cpMixin ,之后在组件中进入进行配置
+export let cpMixin = {
+    methods: {
+        pullmoney(count) {
+            this.money -= count;
+        },
+        pushmoney(count) {
+            this.money -= count; //点击借钱的时候,减少自己的钱
+            this.$parent.money += count; //同时他老爸也就是父组件的钱要加上自己减去的钱,   小红同理
+        }
+    }
+}
+```
+* 在要使用的组件当中引入并使用
+```js
+<script>
+import { cpMixin } from "../mixins"; //引入 mixin 配置文件，通过对象的解构赋值只使用这个 cpMixin
+export default {
+  mixins: [cpMixin], //定义这个 minxins，让组件拥有这个 cpMixin对象
+  data() {
+    return {
+      money: 20000
+    };
+  },
+  methods: {}
+};
+</script>
+```
+# 7.slot-scope (作用域插槽)
+![作用域插槽](https://s1.ax1x.com/2020/05/03/YpkISO.jpg)
+* 现在的问题就是 li 中显示什么内容是由父组件来决定的?
+    * 如果只是一般的子组件需要显示父组件中的数据,那么使用一般的插槽就可以
+* 但是,父组件传递什么样的内容,是由子组件来决定的
+    * 例如,现在是效果一,那么已完成的是pink,那么就是由子组件中的 item 中的 isFlag来决定的,这些东西都是在子组件中的 item 中,是由子组件来决定的
+    这个时候,只用一般的插槽是不行的,就需要使用到作用域插槽想父组件传递数据 ,父组件在接收到数据之后,判断到底要向子组件传递什么内容
+* 子组件在 slot 中怎样向父组件传递数据呢?
+    * 给 slot(插槽)指定属性,
+          也就是说,给 slot 指定的属性,都会传递给父组件
+
+          父组件怎样接收?
+          1. 在父组件中写一个<template></template>
+          2. 给template 添加属性名 slot-scope(注意,这个属性名是固定的) 来去指定一个名字接收子组件slot传过来的值
+```html
+<!--父组件 html 代码-->
+<div>
+    <h2>效果一 显示 todo 列表的时候,已完成的 todo 为绿色</h2>
+    <List :data="todos">
+      <!-- 
+          slot-scope 指定的就是子组件通过 slot 标签传递过来的所有的数据对象
+          也就是说这个 scope 里面有
+                {
+                    item:todo 对象    也就是{ id: 1, text: "吃饭", isFlag: true },
+                    index:下标
+                }
+      -->
+
+      <!--
+             v-if 判断 当前需要的对象,也就是 item 里面的 isFlag 
+             如果为 true(isFlag) 那么就要显示绿色的
+             如果为 false(isFlag)那么就传递下面的 span 什么操作都没有的 
+
+             这样就能让父组件决定传递什么样的数据给子组件的插槽,让子组件显示
+      -->
+      <template slot-scope="scope">
+        <span v-if="scope.item.isFlag" :style="{background:'pink'}">{{scope.item.text}}</span>
+        <span v-else>{{scope.item.text}}</span>
+      </template>
+    </List>
+
+    <h2>效果二 显示 todo 列表的时候,带序号, todo 为蓝绿色搭配显示</h2>
+    <List :data="todos">
+      <template slot-scope="scope">
+        <span>{{scope.index+1}}---</span>
+        <span :style="{background : scope.index % 2 === 1 ? 'pink':'deeppink'}">{{scope.item.text}}</span>
+      </template>
+    </List>
+
+    <h2>效果三 简化语法,显示序号 完成的显示 pink 未完成的显示 deeppink</h2>
+    <!-- 通过对象的解构赋值操作 将 scope 这个对象结构出来,后面直接使用就可以 不需要再写 scope 了 -->
+    <List :data="todos">
+      <template slot-scope="{item,index}">
+        <span>{{index+1}}---</span>
+        <span v-if="item.isFlag" :style="{background:'pink'}">{{item.text}}</span>
+        <span v-else :style="{background:'deeppink'}">{{item.text}}</span>
+      </template>
+    </List>
+  </div>
+```
+```js
+//父组件 js 代码
+data() {
+    return {
+      todos: [
+        { id: 1, text: "吃饭", isFlag: true },
+        { id: 2, text: "睡觉", isFlag: false },
+        { id: 3, text: "打豆豆", isFlag: true },
+        { id: 4, text: "敲代码", isFlag: false },
+        { id: 5, text: "听歌", isFlag: false },
+        { id: 6, text: "逛 b 站", isFlag: true },
+        { id: 7, text: "打张三", isFlag: false }
+      ]
+    };
+  }
+```
+
+```html
+<!--子组件 html代码-->
+<ul>
+    <li v-for="(item,index) in data " :key="index">
+      <!-- 插槽 -->
+      <slot :item="item" :index="index"></slot>
+      <!--
+        现在的问题就是 li 中显示什么内容是由父组件来决定的?
+        如果只是一般的子组件需要显示父组件中的数据,那么使用一般的插槽就可以
+        但是,父组件传递什么样的内容,是由子组件来决定的
+        例如,现在是效果一,那么已完成的是绿色,那么就是由子组件中的 item 中的 isFlag来决定的,这些东西都是在子组件中的 item 中,是由子组件来决定的
+        这个时候,只用一般的插槽是不行的,就需要使用到作用域插槽想父组件传递数据 ,父组件在接收到数据之后,判断到底要向子组件传递什么内容
+      -->
+      <!-- 
+          子组件在 slot 中怎样向父组件传递数据呢?
+          给 slot(插槽)指定属性,
+          也就是说,给 slot 指定的属性,都会传递给父组件
+
+          父组件怎样接收?
+          1. 在父组件中写一个<template></template>
+          2. 给template 添加属性名 slot-scope(注意,这个属性名是固定的) 来去指定一个名字接收子组件slot传过来的值
+      -->
+    </li>
+  </ul>
+```
+```js
+//子组件 js 代码
+export default {
+  props: {
+    data: Array
+  }
+};
+```
+```js
+<!-- 
+    //父组件
+      首先先定义组件标签,将todos的数据传递给子组件,通过标签属性的方式,子组件使用props接收
+    -->
+    <List :data="todos">
+      <!-- 
+      <template>的标签体内容会传递给子组件的<slot>
+      slot-scope:用来指定接收子组件传递过<slot>的标签属性的所有属性数据
+        scope的结构:
+          {
+            row:当前的行数据       //  { id: 1, text: "AAA", isComplete: false }
+            $index:当前的li的下标
+          }
+      -->
+      <template slot-scope="scope">
+        <!-- 判断isComplete 为true的情况下将color颜色改为green -->
+        <!-- 根据表达式的值的 truthiness 来有条件地渲染元素。在切换时元素及它的数据绑定 / 组件被销毁并重建。如果元素是 <template>，将提出它的内容作为条件块。 -->
+        <span v-if="scope.row.isComplete" style="color:green">{{scope.row.text}}</span>
+        <span v-else>{{scope.row.text}}</span>
+      </template>
+    </List>
+    <!-- 
+      问题: 数组的数据并不在父组件中遍历(只有数据源在父组件中 通过props传递给子组件,由子组件遍历显示),所以父组件无法得到具体的某一行的数据, 就无法向子组件List传递特定的列表项内容结构      
+      这个时候要想的是所用于插槽 
+    -->
+
+```
+* 总结：当父组件传递什么样的内容让子组件显示的时候，要显示的内容是由子组件来决定的，这样就很矛盾，因为现在数据都在子组件的 item 中，想让子组件显示他应该显示的数据，就应该用到作用域插槽
+
+    * 1. 给子组件定义一个插槽（slot）,给 slot 标签指定显示内容的属性，传递给父元素，在 slot标签中指定的所有属性都会传递给父组件
+    * 2. 父组件接收这些属性，在父组件中定义<template></template>，给template添加一个属性名slot-scope(注意,这个属性名是固定的)，来去指定一个名字接收子组件传递过来的数据
+    * 3. 子组件传过来的数据都在你指定的 xxx 对象中，可以通过解构赋值的方式使用，当然也可以不解构赋值直接使用
+    * 4. 通过在<template></template>标签中定义内容（例如span），进行条件判断的方式，来让子组件只接收到你能让他接受的数据，之后进行展示
+
+## Vuex通信
+* Vuex
+1. Vuex是一个专为Vue开发的状态管理模式
+2. Vuex是用来管理组件之间通信的一个插件
+* Vuex作用
+    * vuex用来统一管理多个组件共享的状态数据
+    * 在任意两个组件之间都可以进行通信
+        * A组件触发actions|mutation调用==>将数据保存到vuex的状态中
+        * B组件读取vuex中的state或getters数据,就可以得到最新的数据进行显示
+        * 实现任意组件通信
+    
+
+
 
 # 谷粒商城PC项目笔记
 [20200516笔记](http://note.youdao.com/noteshare?id=dda518f74ef97af98494e2e9e3c8ec7a&sub=WEB1779d60d8c17be1469af105199ce0c14)

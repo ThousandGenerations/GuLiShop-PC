@@ -18,10 +18,10 @@
   v-for 和 v-if配合使用
   v-for的优先级要高于v-if,先执行v-for的遍历,每遍历一个在进行if判断
     -->
-    <button disabled v-if="startEnd.end < total-1">···</button>
+    <button disabled v-if="startEnd.end < totalPages-1">···</button>
     <!-- 只有在end小于totalPages的时候应该显示  -->
     <button v-if="startEnd.end<totalPages" @click="setCurrentPage(totalPages)">{{totalPages}}</button>
-    <button :disabled="myCurrentPage===totalPages" @click="setCurrentPage(totalPages+1)">下一页</button>
+    <button :disabled="myCurrentPage===totalPages" @click="setCurrentPage(myCurrentPage+1)">下一页</button>
     <button style="margin-left: 30px" disabled>共 {{total}} 条</button>
   </div>
 </template>
@@ -64,6 +64,7 @@ export default {
       定义方法(设置跳转新的页码)
     */
     setCurrentPage(currentPage) {
+      if (currentPage === this.myCurrentPage) return;
       //应该是更新自己data里面的数据,而不是去更新父组件里面的数据
       this.myCurrentPage = currentPage;
       //分发自定义事件::实际上就是通知父组件当前页码
